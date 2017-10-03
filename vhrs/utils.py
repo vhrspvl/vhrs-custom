@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 
 
 @frappe.whitelist()
@@ -14,3 +15,7 @@ def add_customer(doc, method):
     case = frappe.db.get_value("Cases", {"name": doc.name})
     if case:
         frappe.db.set_value("Cases", case, "customer", customer)
+
+
+def addecode(doc, method):
+    doc.employee_no = make_autoname("V.####")
