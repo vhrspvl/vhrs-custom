@@ -79,13 +79,11 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+    "Employee": {
+        "after_insert": "vhrs.utils.addecode"
+    }
+}
 
 # Scheduled Tasks
 # ---------------
@@ -119,4 +117,3 @@ app_license = "MIT"
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "vhrs.event.get_events"
 # }
-
