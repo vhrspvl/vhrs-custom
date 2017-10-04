@@ -81,7 +81,7 @@ app_license = "MIT"
 
 doc_events = {
     "Employee": {
-        "after_insert": "vhrs.utils.addecode"
+        "before_insert": "vhrs.utils.addecode"
     }
 }
 
