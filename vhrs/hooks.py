@@ -79,11 +79,11 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-    "Employee": {
-        "before_insert": "vhrs.utils.addecode"
-    }
-}
+# doc_events = {
+#   "Employee": {
+#        "before_insert": "vhrs.utils.addecode"
+#    }
+#}
 
 # Scheduled Tasks
 # ---------------
