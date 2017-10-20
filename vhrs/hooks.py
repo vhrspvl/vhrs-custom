@@ -80,31 +80,31 @@ app_license = "MIT"
 # Hook on document methods and events
 
 # doc_events = {
-#   "Employee": {
-#        "before_insert": "vhrs.utils.addecode"
-#    }
-#}
+#     "Project": {
+#         "on_update": "vhrs.utils.update_status"
+#     }
+# }
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"vhrs.tasks.all"
-# 	],
-# 	"daily": [
-# 		"vhrs.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"vhrs.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"vhrs.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"vhrs.tasks.monthly"
-# 	]
-# }
+scheduler_events = {
+    # 	"all": [
+    # 		"vhrs.tasks.all"
+    # 	],
+    "daily": [
+        "vhrs.utils.update_status"
+    ],
+    # 	"hourly": [
+    # 		"vhrs.tasks.hourly"
+    # 	],
+    # 	"weekly": [
+    # 		"vhrs.tasks.weekly"
+    # 	]
+    # 	"monthly": [
+    # 		"vhrs.tasks.monthly"
+    # 	]
+}
 
 # Testing
 # -------
