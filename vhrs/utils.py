@@ -15,5 +15,30 @@ def add_customer(doc, method):
     doc.customer = customer
 
 
-def addecode(doc, method):
-    doc.employee_no = make_autoname("V.####")
+def update_status():
+    projects = frappe.get_all('Project', fields={'name', 'status'})
+    for project in projects:
+        tasks = frappe.db.get_all('Task', fields={'name', 'project', 'status'}, filters={
+            'project': project.name})
+        if tasks:
+            if all(task.status == 'Closed' or task.status == 'Completed' for task in tasks):
+                frappe.db.set_value(
+                    "Project", project.name, "status", "Completed")
+            elif all(task.status == 'Cancelled' for task in tasks):
+                frappe.db.set_value(
+                    "Project", project.name, "status", "Cancelled")
+            else:
+                frappe.db.set_value(
+                    "Project", project.name, "status", "Open")
+
+    customers = frappe.get_all('Customer', fields={'name', 'status'})
+    for customer in customers:
+        projects = frappe.db.get_all('Project', fields={'name', 'customer', 'status'}, filters={
+            'customer': customer.name})
+        if projects:
+            if all(project.status == 'Open' for project in projects):
+                frappe.db.set_value(
+                    "Customer", customer.name, "status", "Open")
+            else:
+                frappe.db.set_value(
+                    "Customer", customer.name, "status", "Active")
