@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from . import __version__ as app_version
@@ -88,13 +89,13 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
-scheduler_events = {
+#scheduler_events = {
     # 	"all": [
     # 		"vhrs.tasks.all"
     # 	],
-    "daily": [
-        "vhrs.utils.update_status"
-    ],
+    #"daily": [
+    #    "vhrs.utils.update_status"
+    #],
     # 	"hourly": [
     # 		"vhrs.tasks.hourly"
     # 	],
@@ -104,7 +105,7 @@ scheduler_events = {
     # 	"monthly": [
     # 		"vhrs.tasks.monthly"
     # 	]
-}
+#}
 
 # Testing
 # -------
