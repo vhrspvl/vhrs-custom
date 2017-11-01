@@ -49,22 +49,22 @@ def update_status(doc, method):
                     "Customer", customer.name, "status", "Active")
 
 
-@frappe.whitelist(allow_guest=False)
+@frappe.whitelist(allow_guest=True)
 def attendance(**args):
-    args = frappe._dict(args)
+    userid = frappe.form_dict.get("userid")
     attendance_id = frappe.db.get_value("Attendance", {
-        "employee": args.userid, "attendance_date": today()})
+        "employee": userid, "attendance_date": today()})
     if attendance_id:
         attendance = frappe.get_doc("Attendance", attendance_id)
-        frappe.errprint(attendance.attendance_date)
     else:
         name, company = frappe.db.get_value(
-            "Employee", args.userid, ["employee_name", "company"])
+            "Employee", userid, ["employee_name", "company"])
         attendance = frappe.new_doc("Attendance")
-        attendance.employee = args.userid
+        attendance.employee = userid
         attendance.employee_name = name
-        attendance.attendance_date = "30-10-2017"
+        attendance.attendance_date = today()
         attendance.status = "Present"
         attendance.company = company
-        frappe.errprint(attendance.employee_name)
+        attendance.submit()
+        frappe.db.commit()
     return 'ok'
