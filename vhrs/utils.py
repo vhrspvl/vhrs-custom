@@ -65,6 +65,7 @@ def attendance(**args):
         attendance.attendance_date = today()
         attendance.status = "Present"
         attendance.company = company
+        attendance.insert(ignore_permissions=True)
         attendance.submit()
         frappe.db.commit()
-    return 'ok'
+    frappe.local.response.message = "ok"
