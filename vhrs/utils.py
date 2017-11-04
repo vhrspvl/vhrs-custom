@@ -41,7 +41,7 @@ def update_status(doc, method):
         projects = frappe.db.get_all('Project', fields={'name', 'customer', 'status'}, filters={
             'customer': customer.name})
         if projects:
-            if all(project.status == 'Open' for project in projects):
+            if all(project.status == 'Open' or project.status == 'Overdue' project.status == 'DnD' for project in projects):
                 frappe.db.set_value(
                     "Customer", customer.name, "status", "Open")
             else:
