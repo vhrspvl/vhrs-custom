@@ -3,11 +3,12 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
 import json
+import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.data import today
+from frappe.utils.response import as_text
 
 
 @frappe.whitelist()
@@ -50,22 +51,30 @@ def update_status(doc, method):
 
 
 @frappe.whitelist(allow_guest=True)
-def attendance(**args):
-    userid = frappe.form_dict.get("userid")
-    attendance_id = frappe.db.get_value("Attendance", {
-        "employee": userid, "attendance_date": today()})
-    if attendance_id:
-        attendance = frappe.get_doc("Attendance", attendance_id)
-    else:
-        name, company = frappe.db.get_value(
-            "Employee", userid, ["employee_name", "company"])
-        attendance = frappe.new_doc("Attendance")
-        attendance.employee = userid
-        attendance.employee_name = name
-        attendance.attendance_date = today()
-        attendance.status = "Present"
-        attendance.company = company
-        attendance.insert(ignore_permissions=True)
-        attendance.submit()
-        frappe.db.commit()
-    frappe.local.response.message = "ok"
+def attendance():
+    if frappe.local.request.remote_addr not in ["192.168.1.65", "127.0.0.1"]: # restrict request from list of IP addresses
+		raise (frappe.exceptions.PermissionError)
+    else:    
+        userid = frappe.form_dict.get("userid")
+        employee = frappe.db.get_value("Employee", {
+            "employee_no": userid})
+        attendance_id = frappe.db.get_value("Attendance", {
+            "employee": employee, "attendance_date": today()})
+        if attendance_id:
+            attendance = frappe.get_doc("Attendance",attendance_id)
+            attendance.out_time = frappe.form_dict.get("att_time")
+        else:
+            name, company = frappe.db.get_value(
+                "Employee", employee, ["employee_name", "company"])
+            attendance = frappe.new_doc("Attendance")
+            attendance.employee = employee
+            attendance.employee_name = name
+            attendance.attendance_date = today()
+            attendance.status = "Present"
+            attendance.in_time = frappe.form_dict.get("att_time")
+            attendance.company = company
+            attendance.insert(ignore_permissions=True)
+            attendance.submit()
+            frappe.db.commit()
+    frappe.response.type = "text"
+    return "ok"
