@@ -89,13 +89,13 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
-#scheduler_events = {
+scheduler_events = {
     # 	"all": [
     # 		"vhrs.tasks.all"
     # 	],
-    #"daily": [
-    #    "vhrs.utils.update_status"
-    #],
+    "daily": [
+        "vhrs.utils.update_status"
+    ],
     # 	"hourly": [
     # 		"vhrs.tasks.hourly"
     # 	],
@@ -105,7 +105,7 @@ app_license = "MIT"
     # 	"monthly": [
     # 		"vhrs.tasks.monthly"
     # 	]
-#}
+}
 
 # Testing
 # -------
