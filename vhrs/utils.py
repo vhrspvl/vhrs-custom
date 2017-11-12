@@ -7,7 +7,9 @@ import json
 import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from frappe.utils.data import today
+import time
+import webbrowser
+from frappe.utils.data import today,get_timestamp
 from frappe.utils.response import as_text
 
 
@@ -19,26 +21,29 @@ def attendance():
         userid = frappe.form_dict.get("userid")
         employee = frappe.db.get_value("Employee", {
             "employee_no": userid})
+        name, company = frappe.db.get_value(
+                "Employee", employee, ["employee_name", "company"])    
         attendance_id = frappe.db.get_value("Attendance", {
             "employee": employee, "attendance_date": today()})
         if attendance_id:
             attendance = frappe.get_doc("Attendance",attendance_id)
-            attendance.out_time = frappe.form_dict.get("att_type")
+            attendance.update({"out_time":frappe.form_dict.get("att_time") })
+            attendance.db_update()
         else:
-            name, company = frappe.db.get_value(
-                "Employee", employee, ["employee_name", "company"])
             attendance = frappe.new_doc("Attendance")
-            attendance.employee = employee
-            attendance.employee_name = name
-            attendance.attendance_date = today()
-            attendance.status = "Present"
-            attendance.in_time = frappe.form_dict.get("att_type")
-            attendance.company = company
-            attendance.insert(ignore_permissions=True)
-            attendance.submit()
-            frappe.db.commit()
-    frappe.response.type = "text"
-    return "ok"
+            attendance.update({
+                "employee":employee,
+                "employee_name":name,
+                "attendance_date":today(),
+                "status":"Present",
+                "in_time": frappe.form_dict.get("att_time"),
+                "company":company
+            })    
+        attendance.save(ignore_permissions=True) 
+        attendance.submit()
+        frappe.db.commit() 
+        frappe.response.type = "text"
+        return "ok"
 
 @frappe.whitelist()
 def add_customer(doc, method):
