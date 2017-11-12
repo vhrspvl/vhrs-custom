@@ -27,7 +27,7 @@ def attendance():
             "employee": employee, "attendance_date": today()})
         if attendance_id:
             attendance = frappe.get_doc("Attendance",attendance_id)
-            attendance.update({"out_time":frappe.form_dict.get("att_time") })
+            attendance.update({"out_time":frappe.form_dict.get("att_time")})
             attendance.db_update()
         else:
             attendance = frappe.new_doc("Attendance")
