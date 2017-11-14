@@ -45,7 +45,7 @@ app_license = "MIT"
 
 # Website user home page (by function)
 # get_website_user_home_page = "vhrs.utils.get_home_page"
-
+fixtures = ["Custom Field", "Custom Script", "Property Setter"]
 # Generators
 # ----------
 
