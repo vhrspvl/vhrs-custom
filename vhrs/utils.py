@@ -8,7 +8,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 import time
-import webbrowser
 from frappe.utils.data import today,get_timestamp
 from frappe.utils.response import as_text
 
@@ -27,16 +26,18 @@ def attendance():
             "employee": employee, "attendance_date": today()})
         if attendance_id:
             attendance = frappe.get_doc("Attendance",attendance_id)
-            attendance.update({"out_time":frappe.form_dict.get("att_time")})
+            out_time = time.strftime("%H:%M:%S", time.gmtime(int(frappe.form_dict.get("att_time"))))
+            attendance.update({"out_time":out_time})
             attendance.db_update()
         else:
             attendance = frappe.new_doc("Attendance")
+            in_time = time.strftime("%H:%M:%S", time.gmtime(int(frappe.form_dict.get("att_time"))))
             attendance.update({
                 "employee":employee,
                 "employee_name":name,
                 "attendance_date":today(),
                 "status":"Present",
-                "in_time": frappe.form_dict.get("att_time"),
+                "in_time": in_time,
                 "company":company
             })    
         attendance.save(ignore_permissions=True) 
