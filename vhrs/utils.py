@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import json
 import frappe
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 import time
 from frappe.utils.data import today, get_timestamp
 
