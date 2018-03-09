@@ -81,9 +81,12 @@ fixtures = ["Custom Field", "Custom Script", "Property Setter"]
 # Hook on document methods and events
 
 # doc_events = {
-#     "Project": {
-#         "on_update": "vhrs.utils.update_status"
-#     }
+#     "Sales Invoice": {
+#         "after_insert": "vhrs.custom.rename_si"
+#     },
+#     # "Project": {
+#     #     "on_update": "vhrs.utils.update_status"
+#     # }
 # }
 
 # Scheduled Tasks
