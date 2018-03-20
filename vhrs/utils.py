@@ -20,14 +20,31 @@ def attendance():
     if employee:
         date = time.strftime("%Y-%m-%d", time.gmtime(
             int(frappe.form_dict.get("att_time"))))
+        name, company = frappe.db.get_value(
+            "Employee", employee, ["employee_name", "company"])
+        attendance_id = frappe.db.get_value("Attendance", {
+            "employee": employee, "attendance_date": date})
         is_leave = check_leave_record(employee, date)
+
         if is_leave == 'Half Day' or is_leave == 'On Leave':
-            pass
+            attendance = frappe.new_doc("Attendance")
+            in_time = time.strftime("%H:%M:%S", time.gmtime(
+                int(frappe.form_dict.get("att_time"))))
+            attendance.update({
+                "employee": employee,
+                "employee_name": name,
+                "attendance_date": date,
+                "status": "On Leave",
+                "in_time": "00:00:00",
+                "out_time": "00:00:00",
+                "company": company
+            })
+            attendance.save(ignore_permissions=True)
+            attendance.submit()
+            frappe.db.commit()
+            frappe.response.type = "text"
+            return "ok"
         else:
-            name, company = frappe.db.get_value(
-                "Employee", employee, ["employee_name", "company"])
-            attendance_id = frappe.db.get_value("Attendance", {
-                "employee": employee, "attendance_date": date})
             if attendance_id:
                 attendance = frappe.get_doc("Attendance", attendance_id)
                 out_time = time.strftime("%H:%M:%S", time.gmtime(
@@ -36,6 +53,8 @@ def attendance():
                 attendance.out_time = max(times)
                 attendance.in_time = min(times)
                 attendance.db_update()
+                frappe.response.type = "text"
+                return "ok"
             else:
                 attendance = frappe.new_doc("Attendance")
                 in_time = time.strftime("%H:%M:%S", time.gmtime(
@@ -48,8 +67,38 @@ def attendance():
                     "in_time": in_time,
                     "company": company
                 })
+                attendance.save(ignore_permissions=True)
+                attendance.submit()
+                frappe.db.commit()
+                frappe.response.type = "text"
+                return "ok"
+    else:
+        employee = frappe.form_dict.get("userid")
+        date = time.strftime("%Y-%m-%d", time.gmtime(
+            int(frappe.form_dict.get("att_time"))))
+        ure_id = frappe.db.get_value("Unregistered Employee", {
+            "employee": employee, "attendance_date": date})
+        if ure_id:
+            attendance = frappe.get_doc(
+                "Unregistered Employee", ure_id)
+            out_time = time.strftime("%H:%M:%S", time.gmtime(
+                int(frappe.form_dict.get("att_time"))))
+            times = [out_time, attendance.in_time]
+            attendance.out_time = max(times)
+            attendance.in_time = min(times)
+            attendance.db_update()
+            frappe.db.commit()
+        else:
+            attendance = frappe.new_doc("Unregistered Employee")
+            in_time = time.strftime("%H:%M:%S", time.gmtime(
+                int(frappe.form_dict.get("att_time"))))
+            attendance.update({
+                "employee": employee,
+                "attendance_date": date,
+                "stgid": frappe.form_dict.get("stgid"),
+                "in_time": in_time,
+            })
             attendance.save(ignore_permissions=True)
-            attendance.submit()
             frappe.db.commit()
         frappe.response.type = "text"
         return "ok"

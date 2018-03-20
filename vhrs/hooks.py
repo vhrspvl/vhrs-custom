@@ -99,6 +99,12 @@ scheduler_events = {
     "daily": [
         "vhrs.utils.update_status"
     ],
+    "cron": {
+        "30 9 * * *": [
+            "vhrs.custom.punch_record"
+        ]
+
+    }
     # 	"hourly": [
     # 		"vhrs.tasks.hourly"
     # 	],

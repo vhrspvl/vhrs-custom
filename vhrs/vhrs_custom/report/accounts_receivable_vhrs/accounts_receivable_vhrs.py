@@ -131,7 +131,10 @@ class ReceivablePayableReport(object):
                     if gle.voucher_type == 'Sales Invoice':
                         payment_type = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "payment_type")
-
+                        # sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
+                        #     "parent": gle.voucher_no})
+                        # for si in sii:
+                        #     frappe.errprint(si["item_name"])
                     row += [gle.voucher_type, payment_type,
                             gle.voucher_no, due_date]
 
