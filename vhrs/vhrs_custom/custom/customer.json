@@ -498,7 +498,7 @@
    "reqd": 0, 
    "search_index": 0, 
    "unique": 0, 
-   "width": "137"
+   "width": "101"
   }, 
   {
    "_assign": null, 
@@ -548,7 +548,7 @@
    "reqd": 0, 
    "search_index": 0, 
    "unique": 0, 
-   "width": "150"
+   "width": "84"
   }, 
   {
    "_assign": null, 
@@ -648,7 +648,7 @@
    "reqd": 0, 
    "search_index": 0, 
    "unique": 0, 
-   "width": "196"
+   "width": "144"
   }, 
   {
    "_assign": null, 
@@ -698,7 +698,7 @@
    "reqd": 0, 
    "search_index": 0, 
    "unique": 0, 
-   "width": null
+   "width": "167"
   }, 
   {
    "_assign": null, 
@@ -998,7 +998,7 @@
    "reqd": 0, 
    "search_index": 0, 
    "unique": 0, 
-   "width": "89"
+   "width": "79"
   }
  ], 
  "custom_perms": [
@@ -1605,6 +1605,29 @@
    "_comments": null, 
    "_liked_by": null, 
    "_user_tags": null, 
+   "creation": "2018-03-23 20:01:32.152153", 
+   "default_value": null, 
+   "doc_type": "Customer", 
+   "docstatus": 0, 
+   "doctype_or_field": "DocType", 
+   "field_name": null, 
+   "idx": 0, 
+   "modified": "2018-03-23 20:01:32.152153", 
+   "modified_by": "Administrator", 
+   "name": "Customer-read_only_onload", 
+   "owner": "Administrator", 
+   "parent": null, 
+   "parentfield": null, 
+   "parenttype": null, 
+   "property": "read_only_onload", 
+   "property_type": "Check", 
+   "value": null
+  }, 
+  {
+   "_assign": null, 
+   "_comments": null, 
+   "_liked_by": null, 
+   "_user_tags": null, 
    "creation": "2018-03-15 11:14:08.511660", 
    "default_value": null, 
    "doc_type": "Customer", 
@@ -1760,29 +1783,6 @@
    "property": "default", 
    "property_type": "Text", 
    "value": ""
-  }, 
-  {
-   "_assign": null, 
-   "_comments": null, 
-   "_liked_by": null, 
-   "_user_tags": null, 
-   "creation": "2018-01-24 18:04:17.760302", 
-   "default_value": null, 
-   "doc_type": "Customer", 
-   "docstatus": 0, 
-   "doctype_or_field": "DocType", 
-   "field_name": null, 
-   "idx": 0, 
-   "modified": "2018-01-24 18:04:17.760302", 
-   "modified_by": "prabavathi.d@voltechgroup.com", 
-   "name": "Customer-read_only_onload", 
-   "owner": "prabavathi.d@voltechgroup.com", 
-   "parent": null, 
-   "parentfield": null, 
-   "parenttype": null, 
-   "property": "read_only_onload", 
-   "property_type": "Check", 
-   "value": null
   }, 
   {
    "_assign": null, 
