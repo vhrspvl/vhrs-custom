@@ -481,8 +481,7 @@ def update_status(doc, method):
 
 @frappe.whitelist()
 def send_daily_report():
-    custom_filter = {'date': today(), "status": (
-        "not in" "Present" and "order_by" "status")}
+    custom_filter = {'date': today(), "status": ("order_by" "Late")}
     report = frappe.get_doc('Report', "Employee Day Attendance")
     columns, data = report.get_data(
         limit=500 or 500, filters=custom_filter, as_dict=True)
