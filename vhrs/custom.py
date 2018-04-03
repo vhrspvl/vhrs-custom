@@ -8,7 +8,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.data import today
-from frappe.utils import cint, fmt_money
+from datetime import date
+from frappe.utils import cint, fmt_money, formatdate, getdate, add_months, date_diff, add_days, flt, cstr
 import requests
 
 
@@ -39,7 +40,7 @@ def mark_absent():
 
 @frappe.whitelist()
 def mark_territory():
-    projects = frappe.db.sql(""" 
+    projects = frappe.db.sql("""
     select name,customer from tabProject where territory is null
     """, as_dict=1)
     for project in projects:
@@ -476,3 +477,20 @@ def update_status(doc, method):
             else:
                 frappe.db.set_value(
                     "Customer", customer.name, "status", "Active")
+
+
+@frappe.whitelist()
+def send_daily_report():
+    custom_filter = {'date': today(), "status": (
+        "not in" "Present" and "order_by" "status")}
+    report = frappe.get_doc('Report', "Employee Day Attendance")
+    columns, data = report.get_data(
+        limit=500 or 500, filters=custom_filter, as_dict=True)
+    html = frappe.render_template(
+        'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
+    frappe.sendmail(
+        recipients=['prabavathi.d@voltechgroup.com'],
+        subject='Employee Attendance Report - ' +
+        formatdate(add_days(today(), -1)),
+        message=html
+    )

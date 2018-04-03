@@ -98,10 +98,11 @@ scheduler_events = {
     # 	],
     "daily": [
         "vhrs.utils.update_status"
+        
     ],
-    # 	"hourly": [
-    # 		"vhrs.tasks.hourly"
-    # 	],
+   	"hourly": [
+   		"vhrs.custom.send_daily_report"
+    ],
     # 	"weekly": [
     # 		"vhrs.tasks.weekly"
     # 	]
