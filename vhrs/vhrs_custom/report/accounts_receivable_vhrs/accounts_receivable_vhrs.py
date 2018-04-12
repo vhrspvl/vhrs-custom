@@ -31,11 +31,12 @@ class ReceivablePayableReport(object):
         if party_naming_by == "Naming Series":
             columns += [args.get("party_type") + " Name::110"]
 
-        columns += [_("Voucher Type") + "::110", _("Payment Type") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
+        columns += [_("Voucher Type") + "::110", _("Payment Type") + "::110", _("HRSIC") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
                     _("Due Date") + ":Date:80"]
 
         if args.get("party_type") == "Supplier":
-            columns += [_("Bill No") + "::80", _("Bill Date") + ":Date:80"]
+            columns += [_("Bill No") + "::80", _("Bill Date") +
+                        ":Date:80", ]
 
         credit_or_debit_note = "Credit Note" if args.get(
             "party_type") == "Customer" else "Debit Note"
@@ -113,6 +114,8 @@ class ReceivablePayableReport(object):
         return_entries = self.get_return_entries(args.get("party_type"))
 
         data = []
+        payment_type = ""
+        hrsic = ""
         for gle in self.get_entries_till(self.filters.report_date, args.get("party_type")):
             if self.is_receivable_or_payable(gle, dr_or_cr, future_vouchers):
                 outstanding_amount, credit_note_amount = self.get_outstanding_amount(gle,
@@ -131,11 +134,16 @@ class ReceivablePayableReport(object):
                     if gle.voucher_type == 'Sales Invoice':
                         payment_type = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "payment_type")
-                        # sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
-                        #     "parent": gle.voucher_no})
-                        # for si in sii:
-                        #     frappe.errprint(si["item_name"])
-                    row += [gle.voucher_type, payment_type,
+
+                    # if gle.voucher_type == 'Payment Entry':
+                    hrsic = frappe.db.get_value(
+                        "Journal Entry", gle.voucher_no, "hrsic")
+
+                    # sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
+                    #     "parent": gle.voucher_no})
+                    # for si in sii:
+                    #     frappe.errprint(si["item_name"])
+                    row += [gle.voucher_type, payment_type or '', hrsic or '',
                             gle.voucher_no, due_date]
 
                     # get supplier bill details

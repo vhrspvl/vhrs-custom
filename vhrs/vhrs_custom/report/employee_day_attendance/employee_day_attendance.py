@@ -33,9 +33,9 @@ def execute(filters=None):
         is_leave = check_leave_record(emp.name, date)
 
         if holiday:
-            row += ["", "", "", "Holiday", ""]
+            row += ["", "", "Holiday", ""]
         elif is_leave:
-            row += [date, "", "", "On Leave", ""]
+            row += [date, "", "On Leave", ""]
         else:
             if att_details:
                 if att_details.attendance_date:
@@ -44,9 +44,7 @@ def execute(filters=None):
                     row += [""]
 
                 if att_details.in_time:
-
                     row += [att_details.in_time]
-
                 else:
                     row += ["00:00:00"]
 
@@ -64,9 +62,8 @@ def execute(filters=None):
                         row += [""]
                 else:
                     row += ["Failed to Punch"]
-
             else:
-                row += ["", "", "", "Absent", ""]
+                row += ["", "", "Absent", ""]
 
         data.append(row)
     return columns, data
@@ -87,7 +84,7 @@ def get_columns(filters):
 
 def get_employees():
     employees = frappe.db.sql(
-        """select name,employee_name,ic from tabEmployee where status = 'Active'""", as_dict=1)
+        """select name,employee_name,ic from tabEmployee where branch != 'Nepal' and status = 'Active'""", as_dict=1)
     return employees
 
 

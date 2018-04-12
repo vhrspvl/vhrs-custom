@@ -114,7 +114,6 @@ def get_columns(filters):
 
 def get_result(filters, account_details):
     gl_entries = get_gl_entries(filters)
-
     data = get_data_with_opening_closing(filters, account_details, gl_entries)
 
     result = get_result_as_list(data, filters)
@@ -143,7 +142,13 @@ def get_gl_entries(filters):
 		order by posting_date, account"""
                                .format(select_fields=select_fields, conditions=get_conditions(filters),
                                        group_by_condition=group_by_condition), filters, as_dict=1)
-
+    parent = frappe._dict()
+    for entry in gl_entries:
+        parent_against_account = frappe.db.get_value(
+            "Account", {"name": entry['against']}, ['parent'])
+        parent[a] = parent_against_account
+        frappe.errprint(parent)
+        # gl_entries.append(parent_against_account)
     return gl_entries
 
 

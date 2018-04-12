@@ -80,14 +80,17 @@ fixtures = ["Custom Field", "Custom Script", "Property Setter"]
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-#     "Sales Invoice": {
-#         "after_insert": "vhrs.custom.rename_si"
-#     },
-#     # "Project": {
-#     #     "on_update": "vhrs.utils.update_status"
-#     # }
-# }
+doc_events = {
+    "Project": {
+        "validate": "vhrs.custom.mark_territory"
+    },
+    # "Attendance": {
+    #     "validate": "vhrs.custom.validatetime"
+    # }
+    # "Project": {
+    #     "on_update": "vhrs.utils.update_status"
+    # }
+}
 
 # Scheduled Tasks
 # ---------------
@@ -100,10 +103,10 @@ scheduler_events = {
         "vhrs.utils.update_status"
     ],
     "cron": {
-        "30 9 * * *": [
-            "vhrs.custom.punch_record"
+        "00 10 * * *": [
+            "vhrs.custom.punch_record",
+            "vhrs.custom.send_daily_report"
         ]
-
     }
     # 	"hourly": [
     # 		"vhrs.tasks.hourly"
