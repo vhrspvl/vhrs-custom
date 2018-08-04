@@ -33,10 +33,10 @@ frappe.query_reports["Monthly Attendance Sheet VHRS"] = {
         "reqd": 1
     },
     {
-        "fieldname": "hrsic",
-        "label": __("HRSIC"),
+        "fieldname": "business_unit",
+        "label": __("Business Unit"),
         "fieldtype": "Link",
-        "options": "HRSIC",
+        "options": "Business Unit",
         // "default": frappe.defaults.get_user_default("Company"),
         // "reqd": 1
     }

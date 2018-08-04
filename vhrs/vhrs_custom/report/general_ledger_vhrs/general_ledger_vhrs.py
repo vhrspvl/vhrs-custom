@@ -131,7 +131,7 @@ def get_gl_entries(filters):
 
     gl_entries = frappe.db.sql("""
 		select
-			posting_date, account, party_type, party,
+			posting_date,account, party_type, party,
 			sum(debit) as debit, sum(credit) as credit,
 			voucher_type, voucher_no, cost_center, project,
 			against_voucher_type, against_voucher,
@@ -142,13 +142,14 @@ def get_gl_entries(filters):
 		order by posting_date, account"""
                                .format(select_fields=select_fields, conditions=get_conditions(filters),
                                        group_by_condition=group_by_condition), filters, as_dict=1)
-    parent = frappe._dict()
-    for entry in gl_entries:
-        parent_against_account = frappe.db.get_value(
-            "Account", {"name": entry['against']}, ['parent'])
-        parent[a] = parent_against_account
-        frappe.errprint(parent)
-        # gl_entries.append(parent_against_account)
+    frappe.errprint(gl_entries)
+    # parent = frappe._dict()
+    # for entry in gl_entries:
+    #     parent_against_account = frappe.db.get_value(
+    #         "Account", {"name": entry['against']}, ['parent'])
+    #     parent[a] = parent_against_account
+    #     frappe.errprint(parent)
+    #     # gl_entries.append(parent_against_account)
     return gl_entries
 
 

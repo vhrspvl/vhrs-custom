@@ -32,7 +32,7 @@ def execute(filters=None):
             continue
 
         row = [emp, emp_det.employee_name, emp_det.branch, emp_det.department, emp_det.designation,
-               emp_det.company, emp_det.ic]
+               emp_det.company, emp_det.business_unit]
 
         total_p = total_a = total_l = 0.0
         for day in range(filters["total_days_in_month"]):
@@ -67,7 +67,7 @@ def get_columns(filters):
         "::140", _("Branch") + ":Link/Branch:120",
         _("Department") + ":Link/Department:120", _("Designation") +
         ":Link/Designation:120",
-        _("Company") + ":Link/Company:120", _("HRSIC") + "::120"
+        _("Company") + ":Link/Company:120", _("Business Unit") + "::120"
     ]
 
     for day in range(filters["total_days_in_month"]):
@@ -114,10 +114,10 @@ def get_conditions(filters):
 def get_employee_details(filters):
     emp_map = frappe._dict()
     query = ''
-    if filters.get("hrsic"):
-        query += " where ic='\%s\'" % filters.get("hrsic")
+    if filters.get("business_unit"):
+        query += " where business_unit='\%s\'" % filters.get("business_unit")
 
-    for d in frappe.db.sql("""select name, employee_name,ic, designation, department, branch, company,
+    for d in frappe.db.sql("""select name, employee_name,business_unit, designation, department, branch, company,
 		holiday_list from `tabEmployee` %s""" % query, as_dict=1):
         emp_map.setdefault(d.name, d)
 

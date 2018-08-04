@@ -16,7 +16,7 @@ def attendance():
     # restrict request from list of IP addresses
     userid = frappe.form_dict.get("userid")
     employee = frappe.db.get_value("Employee", {
-        "employee_no": userid})
+        "employee_no": userid, 'status': 'Active'})
     if employee:
         date = time.strftime("%Y-%m-%d", time.gmtime(
             int(frappe.form_dict.get("att_time"))))
@@ -25,8 +25,7 @@ def attendance():
         attendance_id = frappe.db.get_value("Attendance", {
             "employee": employee, "attendance_date": date})
         is_leave = check_leave_record(employee, date)
-
-        if is_leave == 'Half Day' or is_leave == 'On Leave':
+        if is_leave == 'On Leave':
             attendance = frappe.new_doc("Attendance")
             in_time = time.strftime("%H:%M:%S", time.gmtime(
                 int(frappe.form_dict.get("att_time"))))

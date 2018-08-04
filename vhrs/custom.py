@@ -29,20 +29,42 @@ def add_customer(doc, method):
 
 
 @frappe.whitelist()
-def bulk_mark_territory():
-    projects = frappe.db.sql("""
-    select name,customer from tabProject where territory= 'All Territories'
+def markic():
+    all_so = frappe.get_all("Sales Order", fields=['name', 'territory'])
+    for so in all_so:
+        sales_order = frappe.get_doc("Sales Order", so["name"])
+        if so['territory'] == 'India':
+            sales_order.hrsic = 'BUHR-III'
+            sales_order.flags.ignore_mandatory = True
+            sales_order.save(ignore_permissions=True)
+            frappe.db.commit()
+
+
+@frappe.whitelist()
+def bulk_mark_dnd_incharge():
+    closures = frappe.db.sql("""
+    select name,project from tabClosure where dnd_incharge is null 
     """, as_dict=1)
-    for project in projects:
-        customer_territory = frappe.db.get_value(
-            "Customer", project["customer"], "territory")
-        project = frappe.get_doc("Project", project["name"])
-        project.update({
-            "territory": customer_territory
-            # "services": "Recruitment Service"
-        })
-        project.flags.ignore_mandatory = True
-        project.save(ignore_permissions=True)
+    for closure in closures:
+        dnd_incharge = frappe.db.get_value(
+            "Project", closure["project"], "dnd_incharge")
+        if dnd_incharge:
+            closure = frappe.get_doc("Closure", closure["name"])
+            closure.dnd_incharge = dnd_incharge
+            closure.db_update()
+
+
+@frappe.whitelist()
+def bulk_mark_so_cg():
+    sos = frappe.db.sql("""
+    select name,customer from `tabSales Order` where customer_group='All Customer Groups' """, as_dict=1)
+    for so in sos:
+        cg = frappe.db.get_value(
+            "Customer", so["customer"], "customer_group")
+        if cg:
+            so = frappe.get_doc("Sales Order", so["name"])
+            so.customer_group = cg
+            so.db_update()
 
 
 @frappe.whitelist()
@@ -51,10 +73,13 @@ def mark_territory(doc, method):
         "Customer", doc.customer, "territory")
     doc.territory = customer_territory
 
+# @frappe.whitelist()
+# def mark_dnd_incharge(doc,method):
+
 
 def get_employees_who_are_present():
     return frappe.db.sql("""select employee
-		from tabAttendance where attendance_date =%(date)s""", {"date": today()}, as_dict=True)
+        from tabAttendance where attendance_date =%(date)s""", {"date": today()}, as_dict=True)
 
 
 def temp_so():
@@ -327,6 +352,7 @@ def punch_record():
         conn = zk.connect()
         attendance = conn.get_attendance()
         curdate = datetime.now().date()
+        # curdate = '2018-04-12'
         for att in attendance:
             # if att.user_id == '170':
             date = att.timestamp.date()
@@ -334,7 +360,6 @@ def punch_record():
                 mtime = att.timestamp.time()
                 mtimef = timedelta(
                     hours=mtime.hour, minutes=mtime.minute, seconds=mtime.second)
-
                 userid = att.user_id
                 employee = frappe.db.get_value("Employee", {
                     "employee_no": userid, "status": "Active"})
@@ -345,6 +370,8 @@ def punch_record():
                         "employee": employee, "attendance_date": date})
                     if pr_id:
                         pr = frappe.get_doc("Punch Record", pr_id)
+                        print min(pr.timetable)
+                        # max(i.punchtime)
                         for i in pr.timetable:
                             if i.punch_time == mtimef:
                                 already_exist = True
@@ -370,24 +397,25 @@ def punch_record():
             conn.disconnect()
 
 
-@frappe.whitelist()
-def validatetime(doc, method):
-    try:
-        time.strptime(doc.in_time, '%H:%M:%S')
+@frappe.whitelist(allow_guest=True)
+def client_feedback():
+    first = frappe.form_dict.get("formID")
+    last = frappe.form_dict.get("last")
+    cf = frappe.new_doc("Client Feedback")
+    cf.first_name = first
+    cf.last_name = last
+    cf.insert()
+    cf.save(ignore_permissions=True)
 
-    except ValueError:
-        frappe.msgprint(" Time should be in Format HH:MM:SS ")
-        doc.in_time = ""
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017, VHRS and contributors
+# For license information, please see license.txt
 
-  # -*- coding: utf-8 -*-
-    # Copyright (c) 2017, VHRS and contributors
-    # For license information, please see license.txt
-
-    # @frappe.whitelist(allow_guest=True)
-    # def attendance():
-    #     global attendance_date, att_time
-    #     userid = frappe.form_dict.get("userid")
-    #     employee = frappe.db.get_value("Employee", {
+# @frappe.whitelist(allow_guest=True)
+# def attendance():
+#     global attendance_date, att_time
+#     userid = frappe.form_dict.get("userid")
+#     employee = frappe.db.get_value("Employee", {
     #         "biometric_id": userid})
     #     if employee:
     #         date = time.strftime("%Y-%m-%d", time.gmtime(

@@ -1,0 +1,30 @@
+{
+ "add_total_row": 0, 
+ "apply_user_permissions": 1, 
+ "creation": "2018-05-21 19:23:17.725284", 
+ "disabled": 0, 
+ "docstatus": 0, 
+ "doctype": "Report", 
+ "idx": 0, 
+ "is_standard": "Yes", 
+ "letter_head": "VHRS", 
+ "modified": "2018-08-04 22:14:05.495173", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "Employee Work Anniversary", 
+ "owner": "Administrator", 
+ "ref_doctype": "Employee", 
+ "report_name": "Employee Work Anniversary", 
+ "report_type": "Script Report", 
+ "roles": [
+  {
+   "role": "Employee"
+  }, 
+  {
+   "role": "HR User"
+  }, 
+  {
+   "role": "HR Manager"
+  }
+ ]
+}

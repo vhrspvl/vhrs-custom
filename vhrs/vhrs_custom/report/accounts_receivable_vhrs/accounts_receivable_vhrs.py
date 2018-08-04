@@ -31,7 +31,7 @@ class ReceivablePayableReport(object):
         if party_naming_by == "Naming Series":
             columns += [args.get("party_type") + " Name::110"]
 
-        columns += [_("Voucher Type") + "::110", _("Payment Type") + "::110", _("HRSIC") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
+        columns += [_("Voucher Type") + "::110", _("Payment Type") + "::110", _("Business Unit") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
                     _("Due Date") + ":Date:80"]
 
         if args.get("party_type") == "Supplier":
@@ -134,15 +134,26 @@ class ReceivablePayableReport(object):
                     if gle.voucher_type == 'Sales Invoice':
                         payment_type = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "payment_type")
+                        hrsic = frappe.db.get_value(
+                            "Sales Invoice", gle.voucher_no, "hrsic")
 
-                    # if gle.voucher_type == 'Payment Entry':
-                    hrsic = frappe.db.get_value(
-                        "Journal Entry", gle.voucher_no, "hrsic")
+                    if gle.voucher_type == 'Purchase Invoice':
+                        hrsic = frappe.db.get_value(
+                            "Purchase Invoice", gle.voucher_no, "hrsic")
 
-                    # sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
-                    #     "parent": gle.voucher_no})
-                    # for si in sii:
-                    #     frappe.errprint(si["item_name"])
+                    if gle.voucher_type == 'Journal Entry':
+                        hrsic = frappe.db.get_value(
+                            "Journal Entry", gle.voucher_no, "hrsic")
+
+                    if gle.voucher_type == 'Payment Entry':
+                        hrsic = frappe.db.get_value(
+                            "Payment Entry", gle.voucher_no, "hrsic")
+
+                    sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
+                        "parent": gle.voucher_no}, limit_page_length=0)
+                    for si in sii:
+                        frappe.errprint(si["item_name"])
+
                     row += [gle.voucher_type, payment_type or '', hrsic or '',
                             gle.voucher_no, due_date]
 

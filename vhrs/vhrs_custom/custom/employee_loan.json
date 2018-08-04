@@ -1,0 +1,43 @@
+{
+ "custom_fields": [], 
+ "custom_perms": [
+  {
+   "_assign": null, 
+   "_comments": null, 
+   "_liked_by": null, 
+   "_user_tags": null, 
+   "amend": 0, 
+   "apply_user_permissions": 0, 
+   "cancel": 1, 
+   "create": 1, 
+   "creation": "2016-12-02 10:11:49.673604", 
+   "delete": 1, 
+   "docstatus": 0, 
+   "email": 1, 
+   "export": 1, 
+   "idx": 1, 
+   "if_owner": 0, 
+   "import": 0, 
+   "modified": "2017-08-04 12:03:23.104883", 
+   "modified_by": "Administrator", 
+   "name": "e35bf550c3", 
+   "owner": "Administrator", 
+   "parent": "Employee Loan", 
+   "parentfield": "permissions", 
+   "parenttype": "DocType", 
+   "permlevel": 0, 
+   "print": 1, 
+   "read": 1, 
+   "report": 1, 
+   "role": "HR Manager", 
+   "set_user_permissions": 0, 
+   "share": 1, 
+   "submit": 1, 
+   "user_permission_doctypes": null, 
+   "write": 1
+  }
+ ], 
+ "doctype": "Employee Loan", 
+ "property_setters": [], 
+ "sync_on_migrate": 1
+}
