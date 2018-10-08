@@ -20,8 +20,10 @@ def execute(filters=None):
 
 
 def get_data(filters, show_party_name):
-    party_name_field = "customer_name" if filters.get(
-        "party_type") == "Customer" else "supplier_name"
+    if filters.get("party_type") == "Customer":
+        party_name_field = "customer_name"
+    else:
+        party_name_field = "supplier_name"
     party_filters = {"name": filters.get(
         "party")} if filters.get("party") else {}
     parties = frappe.get_all(filters.get("party_type"), fields=["name", party_name_field],
@@ -49,6 +51,8 @@ def get_data(filters, show_party_name):
             "Customer", party.name, "territory")
         row["customer_group"] = frappe.db.get_value(
             "Customer", party.name, "customer_group")
+        row["supplier_type"] = frappe.db.get_value(
+            "Supplier", party.name, "supplier_type")
         # opening
         opening_debit, opening_credit = opening_balances.get(party.name, [
                                                              0, 0])
@@ -234,7 +238,14 @@ def get_columns(filters, show_party_name):
             "fieldtype": "Data",
             "width": 180
         })
-
+    # if filters.party_type == "Supplier":
+    else:
+        columns.insert(1, {
+            "fieldname": "supplier_type",
+            "label": _(filters.party_type) + " Type",
+            "fieldtype": "Data",
+            "width": 120
+        })
     return columns
 
 

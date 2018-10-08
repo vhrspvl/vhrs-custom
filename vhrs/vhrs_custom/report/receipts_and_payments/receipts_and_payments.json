@@ -1,0 +1,30 @@
+{
+ "add_total_row": 0, 
+ "apply_user_permissions": 1, 
+ "creation": "2018-08-28 13:41:58.730301", 
+ "disabled": 0, 
+ "docstatus": 0, 
+ "doctype": "Report", 
+ "idx": 0, 
+ "is_standard": "Yes", 
+ "letter_head": "VHRS", 
+ "modified": "2018-08-28 13:41:58.730301", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "Receipts and Payments", 
+ "owner": "Administrator", 
+ "ref_doctype": "GL Entry", 
+ "report_name": "Receipts and Payments", 
+ "report_type": "Script Report", 
+ "roles": [
+  {
+   "role": "Accounts User"
+  }, 
+  {
+   "role": "Accounts Manager"
+  }, 
+  {
+   "role": "Auditor"
+  }
+ ]
+}

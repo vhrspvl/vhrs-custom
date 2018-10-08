@@ -23,7 +23,7 @@ def execute(filters=None):
     data = []
     row = []
     for emp in get_employees():
-        row = [emp.name, emp.employee_name, emp.ic]
+        row = [emp.name, emp.employee_name, emp.business_unit]
         att_details = frappe.db.get_value("Attendance", {'attendance_date': date, 'employee': emp.name}, [
             'name', 'attendance_date', 'status', 'in_time', 'out_time'], as_dict=True)
 
@@ -73,18 +73,18 @@ def get_columns(filters):
     columns = [
         _("Employee") + ":Link/Employee:90",
         _("Employee Name") + "::150",
-        _("HRSIC") + "::180",
+        _("Business Unit") + "::180",
         _("Attendance Date") + ":Date:90",
         _("In Time") + "::120",
         _("Status") + "::120",
-        _("Remarks") + "::120",
+        _("Remarks") + ":orderby:120",
     ]
     return columns
 
 
 def get_employees():
     employees = frappe.db.sql(
-        """select name,employee_name,ic from tabEmployee where branch != 'Nepal' and status = 'Active'""", as_dict=1)
+        """select name,employee_name,business_unit from tabEmployee where branch != 'Nepal' and status = 'Active'""", as_dict=1)
     return employees
 
 

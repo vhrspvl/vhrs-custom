@@ -31,7 +31,7 @@ class ReceivablePayableReport(object):
         if party_naming_by == "Naming Series":
             columns += [args.get("party_type") + " Name::110"]
 
-        columns += [_("Voucher Type") + "::110", _("Payment Type") + "::110", _("Business Unit") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
+        columns += [_("Voucher Type") + "::110", _("Invoice Type") + "::110", _("Item Code") + "::110", _("Item Name") + "::110", _("Business Unit") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
                     _("Due Date") + ":Date:80"]
 
         if args.get("party_type") == "Supplier":
@@ -114,7 +114,7 @@ class ReceivablePayableReport(object):
         return_entries = self.get_return_entries(args.get("party_type"))
 
         data = []
-        payment_type = ""
+        invoice_type = ""
         hrsic = ""
         for gle in self.get_entries_till(self.filters.report_date, args.get("party_type")):
             if self.is_receivable_or_payable(gle, dr_or_cr, future_vouchers):
@@ -132,8 +132,8 @@ class ReceivablePayableReport(object):
 
                     # get_payment_type
                     if gle.voucher_type == 'Sales Invoice':
-                        payment_type = frappe.db.get_value(
-                            "Sales Invoice", gle.voucher_no, "payment_type")
+                        invoice_type = frappe.db.get_value(
+                            "Sales Invoice", gle.voucher_no, "invoice_type")
                         hrsic = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "hrsic")
 
@@ -142,19 +142,32 @@ class ReceivablePayableReport(object):
                             "Purchase Invoice", gle.voucher_no, "hrsic")
 
                     if gle.voucher_type == 'Journal Entry':
+                        invoice_type = frappe.db.get_value(
+                            "Journal Entry", gle.voucher_no, "invoice_type")
                         hrsic = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "hrsic")
 
                     if gle.voucher_type == 'Payment Entry':
+                        invoice_type = frappe.db.get_value(
+                            "Payment Entry", gle.voucher_no, "invoice_type")
                         hrsic = frappe.db.get_value(
                             "Payment Entry", gle.voucher_no, "hrsic")
 
-                    sii = frappe.get_all("Sales Invoice Item", fields=["item_name"], filters={
+                    item_name = []
+                    item_code = []
+                    sii = frappe.get_all("Sales Invoice Item", fields=["item_name", "item_code"], filters={
                         "parent": gle.voucher_no}, limit_page_length=0)
-                    for si in sii:
-                        frappe.errprint(si["item_name"])
 
-                    row += [gle.voucher_type, payment_type or '', hrsic or '',
+                    for si in sii:
+                        # frappe.errprint(si)
+                        item_code.append(si["item_code"])
+                    for si in sii:
+                        item_name.append(si["item_name"])
+
+                    item_name = "/".join(item_name)
+                    item_code = "/".join(item_code)
+
+                    row += [gle.voucher_type, invoice_type or '', item_code or '', item_name or '', hrsic or '',
                             gle.voucher_no, due_date]
 
                     # get supplier bill details
@@ -357,14 +370,15 @@ class ReceivablePayableReport(object):
         rows = []
         for d in data:
             rows.append(
-                d[self.ageing_col_idx_start: self.ageing_col_idx_start + 4])
-
-        if rows:
-            rows.insert(0, [[d.get("label")] for d in ageing_columns])
+                {
+                    'values': d[self.ageing_col_idx_start: self.ageing_col_idx_start + 4]
+                }
+            )
 
         return {
             "data": {
-                'labels': rows
+                'labels': [d.get("label") for d in ageing_columns],
+                'datasets': rows
             },
             "type": 'percentage'
         }

@@ -87,7 +87,7 @@ def set_account_currency(filters):
 
 def get_columns(filters):
     columns = [
-        _("Posting Date") + ":Date:90", _("Account") + ":Link/Account:200",
+        _("Posting Date") + ":Date:90",  _("Against Account") + "::120",
         _("Debit") + ":Float:100", _("Credit") + ":Float:100"
     ]
 
@@ -99,8 +99,9 @@ def get_columns(filters):
 
     columns += [
         _("Voucher Type") + "::120", _("Voucher No") +
-        ":Dynamic Link/" + _("Voucher Type") + ":160",
-        _("Against Account") + "::120", _("Party Type") +
+        ":Dynamic Link/" + _("Voucher Type") +
+        ":160", _("Account") + ":Link/Account:200",
+        _("Parent Account") + "::120", _("Party Type") +
         "::80", _("Party") + "::150",
         _("Project") + ":Link/Project:100", _("Cost Center") +
         ":Link/Cost Center:100",
@@ -142,13 +143,13 @@ def get_gl_entries(filters):
 		order by posting_date, account"""
                                .format(select_fields=select_fields, conditions=get_conditions(filters),
                                        group_by_condition=group_by_condition), filters, as_dict=1)
-    frappe.errprint(gl_entries)
-    # parent = frappe._dict()
-    # for entry in gl_entries:
-    #     parent_against_account = frappe.db.get_value(
-    #         "Account", {"name": entry['against']}, ['parent'])
-    #     parent[a] = parent_against_account
-    #     frappe.errprint(parent)
+    # frappe.errprint(gl_entries)
+    parent = frappe._dict()
+    for entry in gl_entries:
+        parent_against_account = frappe.db.get_value(
+            "Account", {"name": entry['against']}, ['parent'])
+        # parent[a] =
+        frappe.errprint(parent_against_account)
     #     # gl_entries.append(parent_against_account)
     return gl_entries
 
@@ -327,14 +328,14 @@ def get_balance_row(label, balance, balance_in_account_currency=None):
 def get_result_as_list(data, filters):
     result = []
     for d in data:
-        row = [d.get("posting_date"), d.get("account"),
+        row = [d.get("posting_date"), d.get("against"),
                d.get("debit"), d.get("credit")]
 
         if filters.get("show_in_account_currency"):
             row += [d.get("debit_in_account_currency"),
                     d.get("credit_in_account_currency")]
 
-        row += [d.get("voucher_type"), d.get("voucher_no"), d.get("against"),
+        row += [d.get("voucher_type"), d.get("voucher_no"), d.get("account"),
                 d.get("party_type"), d.get("party"), d.get("project"), d.get("cost_center"), d.get(
                     "against_voucher_type"), d.get("against_voucher"), d.get("remarks")
                 ]

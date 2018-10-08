@@ -1,0 +1,49 @@
+{
+ "add_total_row": 1, 
+ "apply_user_permissions": 1, 
+ "creation": "2018-09-26 12:25:21.690165", 
+ "disabled": 0, 
+ "docstatus": 0, 
+ "doctype": "Report", 
+ "idx": 0, 
+ "is_standard": "Yes", 
+ "letter_head": "VHRS", 
+ "modified": "2018-09-26 12:34:32.362532", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "ST Candidate List", 
+ "owner": "Administrator", 
+ "query": "SELECT\n c.name as \"Candidate:Link/Candidate:200\",\n c.given_name as \"Candidate Name::200\",\n t.project as \"Project Name::200\",\n t.name as \"Task ID::200\",\n c.creation as \"Date:Date:80\",\n t.subject as \"Position::200\",\n c.pending_for as \"Candidate Status::200\",\n c.user as \"Executive::200\"\nFROM\n `tabCandidate` as c,`tabTask` as t\nwhere\n t.name = c.task and\n c.user IN ('thirumurugan.s@voltechgroup.com','jeyakumar.s@voltechgroup.com','aruna.m@voltechgroup.com','kalpana.g@voltechgroup.com','rahul.k@voltechgroup.com','nagaraju.s@voltechgroup.com','dinomol.j@voltechgroup.com','saranya.k@voltechgroup.com','mahalakshmi.a@voltechgroup.com','renold.mc@voltechgroup.com')\norder by\n c.task", 
+ "ref_doctype": "Candidate", 
+ "report_name": "ST Candidate List", 
+ "report_type": "Query Report", 
+ "roles": [
+  {
+   "role": "Vendor"
+  }, 
+  {
+   "role": "DnD Executive"
+  }, 
+  {
+   "role": "Projects Manager"
+  }, 
+  {
+   "role": "System Manager"
+  }, 
+  {
+   "role": "Projects User"
+  }, 
+  {
+   "role": "Project Leader"
+  }, 
+  {
+   "role": "RCS User"
+  }, 
+  {
+   "role": "Projects Master Manager"
+  }, 
+  {
+   "role": "Team SBMK"
+  }
+ ]
+}

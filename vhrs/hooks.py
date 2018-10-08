@@ -100,12 +100,14 @@ scheduler_events = {
     # 		"vhrs.tasks.all"
     # 	],
     "daily": [
-        "vhrs.utils.update_status"
+        # "vhrs.custom.update_status",
+        "vhrs.custom.send_active_report"
     ],
     "cron": {
         "00 10 * * *": [
             "vhrs.custom.punch_record",
             "vhrs.custom.send_daily_report"
+
         ]
     }
     # 	"hourly": [

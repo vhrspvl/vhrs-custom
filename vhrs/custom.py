@@ -5,48 +5,121 @@
 from __future__ import unicode_literals
 import json
 import frappe
+import socket,os
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.data import today
 from frappe.utils import formatdate, cint, fmt_money, add_days
 import requests
-from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta, date
 import time
+# from netifaces import netifaces
+
+
+@frappe.whitelist(allow_guest=True)
+def bioupdate():
+    # restrict request from list of IP addresses
+    userid = frappe.form_dict.get("uid")
+    bu = frappe.new_doc("Biometric Update")
+    if userid:
+        bu.uid = userid
+    else:
+        bu.uid = "hi"
+    bu.save(ignore_permissions=True)
+    frappe.db.commit()
+    frappe.response.type = "text"
+    return "ok"
 
 
 @frappe.whitelist()
+def send_drop_list():
+    from_date = str(date.today() - relativedelta(weeks=1))
+    to_date = add_days(today(), -1)
+    # print type(from_date)
+    custom_filter = {'from_date': from_date, 'to_date': to_date}
+    report = frappe.get_doc('Report', "Dropped Candidate List")
+    columns, data = report.get_data(
+        limit=500 or 500, filters=custom_filter, as_dict=True)
+    html = frappe.render_template(
+        'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
+    msg = "Kindly find the attached Dropped Candidate List Dated From " + \
+        formatdate(from_date) + " To " + formatdate(to_date)
+    frappe.sendmail(
+        recipients=['prabavathi.d@voltechgroup.com'],
+        subject='Dropped Candidate List Upto - ' +
+        formatdate(add_days(today(), -1)),
+        message=msg + html
+    )
+
+
+@frappe.whitelist()
+def send_dropped_list():
+    from_date = str(date.today() - relativedelta(months=1))
+    to_date = add_days(today(), -1)
+    # print type(from_date)
+    custom_filter = {'from_date': from_date, 'to_date': to_date}
+    report = frappe.get_doc('Report', "Dropped Candidate List")
+    columns, data = report.get_data(
+        limit=500 or 500, filters=custom_filter, as_dict=True)
+    html = frappe.render_template(
+        'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
+    msg = "Kindly find the attached Dropped Candidate List Dated From " + \
+        formatdate(from_date) + " To " + formatdate(to_date)
+    frappe.sendmail(
+        recipients=['prabavathi.d@voltechgroup.com'],
+        subject='Dropped Candidate List Upto - ' +
+        formatdate(add_days(today(), -1)),
+        message=msg + html
+    )
+
+
+# @frappe.whitelist()
+# def send_drop_report():
+#     report = frappe.get_doc('Report', "Dropped Candidate List")
+#     columns, data = report.get_data(
+#         limit=500 or 500, as_dict=True)
+#     html = frappe.render_template(
+#         'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
+#     frappe.sendmail(
+#         recipients=['Prabavathi.d@voltechgroup.com'],
+#         subject = 'Dropped Candidate List ' +
+#         message=html
+#     )
+
+@frappe.whitelist()
 def get_candidates(customer):
-    candidate_list = frappe.get_list("Closure", fields=["name", "passport_no"], filters={
+    candidate_list=frappe.get_list("Closure", fields = ["name", "passport_no"], filters = {
         "customer": customer})
     return candidate_list
 
 
 @frappe.whitelist()
 def add_customer(doc, method):
-    customer = frappe.db.get_value("User", {"email": frappe.session.user},
+    customer=frappe.db.get_value("User", {"email": frappe.session.user},
                                    ["customer"])
-    doc.customer = customer
+    doc.customer=customer
 
 
 @frappe.whitelist()
 def markic():
-    all_so = frappe.get_all("Sales Order", fields=['name', 'territory'])
+    all_so=frappe.get_all("Sales Order", fields = ['name', 'territory'])
     for so in all_so:
-        sales_order = frappe.get_doc("Sales Order", so["name"])
+        sales_order=frappe.get_doc("Sales Order", so["name"])
         if so['territory'] == 'India':
-            sales_order.hrsic = 'BUHR-III'
-            sales_order.flags.ignore_mandatory = True
-            sales_order.save(ignore_permissions=True)
+            sales_order.hrsic='BUHR-III'
+            sales_order.flags.ignore_mandatory=True
+            sales_order.save(ignore_permissions = True)
             frappe.db.commit()
 
 
 @frappe.whitelist()
 def bulk_mark_dnd_incharge():
-    closures = frappe.db.sql("""
-    select name,project from tabClosure where dnd_incharge is null 
-    """, as_dict=1)
+    closures=frappe.db.sql("""
+    select name,project from tabClosure where dnd_incharge is null
+    """, as_dict = 1)
     for closure in closures:
-        dnd_incharge = frappe.db.get_value(
+        dnd_incharge=frappe.db.get_value(
             "Project", closure["project"], "dnd_incharge")
         if dnd_incharge:
             closure = frappe.get_doc("Closure", closure["name"])
@@ -55,16 +128,17 @@ def bulk_mark_dnd_incharge():
 
 
 @frappe.whitelist()
-def bulk_mark_so_cg():
-    sos = frappe.db.sql("""
-    select name,customer from `tabSales Order` where customer_group='All Customer Groups' """, as_dict=1)
-    for so in sos:
-        cg = frappe.db.get_value(
-            "Customer", so["customer"], "customer_group")
-        if cg:
-            so = frappe.get_doc("Sales Order", so["name"])
-            so.customer_group = cg
-            so.db_update()
+def bulk_mark_territory():
+    tasks = frappe.db.sql("""
+    select name,project from `tabTask` where territory is null""", as_dict=1)
+    for t in tasks:
+        territory = frappe.db.get_value(
+            "Project", t["project"], "territory")
+
+        if territory:
+            task = frappe.get_doc("Task", t["name"])
+            task.territory = territory
+            task.db_update()
 
 
 @frappe.whitelist()
@@ -73,7 +147,65 @@ def mark_territory(doc, method):
         "Customer", doc.customer, "territory")
     doc.territory = customer_territory
 
-# @frappe.whitelist()
+
+@frappe.whitelist()
+def mark_project_type():
+    mark_project = frappe.db.sql("""
+        select name from tabProject
+            """, as_dict=1)
+    for project in mark_project:
+        project_type = frappe.db.set_value(
+            "Project", project.name, "project_type", "External")
+        department = frappe.db.set_value(
+            "Project", project.name, "department", "REC")
+        if project_type:
+            project = frappe.get_doc("Project", project["name"])
+            project.project_type = project_type
+            project.db_update()
+            frappe.db.commit()
+        if department:
+            project = frappe.get_doc("Project", project["name"])
+            project.department = department
+            project.db_update()
+            frappe.db.commit()
+
+
+@frappe.whitelist()
+def mark_task_dept():
+    mark_task = frappe.db.sql("""
+        select name from tabTask
+            """, as_dict=1)
+    for task in mark_task:
+        department = frappe.db.set_value(
+            "Task", task.name, "department", "REC")
+        if department:
+            task = frappe.get_doc("Task", task["name"])
+            task.department = department
+            task.db_update()
+            frappe.db.commit()
+
+
+@frappe.whitelist()
+def delete_bulk():
+    left_employees = frappe.get_list(
+        "Employee", fields=["employee_no", "name"], filters={"status": "Left", "is_deleted": 0})
+    print len(left_employees)
+    # for l in left_employees:
+    #     stgids = frappe.db.get_all("Service Tag")
+    #     for stgid in stgids:
+    #         uid = l.employee_no
+    #         url = "http://robot.camsunit.com/external/1.0/user/delete?uid=%s&stgid=%s" % (
+    #             uid, stgid.name)
+    #         r = requests.post(url)
+    #         if r.content == "OK":
+    #             emp = frappe.get_doc("Employee", l.name)
+    #             emp.is_deleted = 1
+    #             emp.db_update()
+    #             frappe.db.commit()
+    #             return r.content
+
+
+# # @frappe.whitelist()
 # def mark_dnd_incharge(doc,method):
 
 
@@ -85,7 +217,7 @@ def get_employees_who_are_present():
 def temp_so():
     closures = frappe.db.sql(
         """select c.* from tabClosure as c where c.sales_order_confirmed_date <= '2018-01-19' and
-        c.status !='Dropped' and c.status != 'Waitlisted' and c.status != 'Sales Order' and c.status != 'PSL' and not c.sales_order_confirmed_date is null 
+        c.status !='Dropped' and c.status != 'Waitlisted' and c.status != 'Sales Order' and c.status != 'PSL' and not c.sales_order_confirmed_date is null
         """, as_dict=1)
     for closure in closures:
         # print closure.name, closure.sales_order_confirmed_date
@@ -180,6 +312,7 @@ def update_in_biometric_machine(uid, uname):
 @frappe.whitelist()
 def create_sales_order(name, customer, project, name1, passport_no, candidate_sc, client_sc, is_client, is_candidate):
     territory = frappe.db.get_value("Customer", customer, "territory")
+    cg = frappe.db.get_value("Customer", customer, "customer_group")
     if is_candidate or is_client:
         item_candidate_id = frappe.db.get_value(
             "Item", {"name": name + "_Candidate"})
@@ -207,6 +340,7 @@ def create_sales_order(name, customer, project, name1, passport_no, candidate_sc
                 so.payment_type = "Candidate"
                 so.passport_no = passport_no,
                 so.territory = territory
+                so.customer_group = cg
                 so.append("items", {
                     "item_code": item.item_code,
                     "item_name": item.item_name,
@@ -227,6 +361,7 @@ def create_sales_order(name, customer, project, name1, passport_no, candidate_sc
                 so.payment_type = "Client"
                 so.passport_no = passport_no
                 so.territory = territory
+                so.customer_group = cg
                 so.append("items", {
                     "item_code": item.item_code,
                     "item_name": item.item_name,
@@ -247,6 +382,7 @@ def create_sales_order(name, customer, project, name1, passport_no, candidate_sc
 @frappe.whitelist()
 def recreate_sales_order(name, customer, project, name1, passport_no, redeputation_cost):
     territory = frappe.db.get_value("Customer", customer, "territory")
+    cg = frappe.db.get_value("Customer", customer, "customer_group")
     if redeputation_cost:
         item_candidate_id = frappe.db.get_value(
             "Item", {"name": passport_no + "_Redeputed"})
@@ -269,6 +405,7 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
                 so.payment_type = "Client"
                 so.passport_no = passport_no,
                 so.territory = territory
+                so.customer_group = cg
                 so.append("items", {
                     "item_code": item.item_code,
                     "item_name": item.item_name,
@@ -285,7 +422,7 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
             return "Sales Order Created for Total value {0}".format(frappe.bold(fmt_money(redeputation_cost, currency='INR')))
 
 
-def update_status(doc, method):
+def update_status():
     projects = frappe.get_all('Project', fields={'name', 'status'})
     for project in projects:
         tasks = frappe.db.get_all('Task', fields={'name', 'project', 'status'}, filters={
@@ -322,7 +459,7 @@ def get_zk():
 
 @frappe.whitelist()
 def send_daily_report():
-    custom_filter = {'date': today(), 'remarks': ('order_by' 'Late')}
+    custom_filter = {'date': today()}
     report = frappe.get_doc('Report', "Employee Day Attendance")
     columns, data = report.get_data(
         limit=500 or 500, filters=custom_filter, as_dict=True)
@@ -336,9 +473,32 @@ def send_daily_report():
                     'jagan.k@voltechgroup.com',
                     'dhavachelvan.d@voltechgroup.com',
                     'selvaraj.g@voltechgroup.com',
-                    'mohanraj.e@voltechgroup.com'],
+                    'mohanraj.e@voltechgroup.com'
+                    ],
         subject='Employee Attendance Report - ' +
         formatdate(today()),
+        message=html
+    )
+
+
+@frappe.whitelist()
+def send_active_report():
+    custom_filter = {'status': "Active",
+                     'employment_type': ["not in", ["Contract"]]}
+    report = frappe.get_doc('Report', "Active Employees - VHRS")
+    columns, data = report.get_data(
+        limit=500 or 500, filters=custom_filter, as_dict=True)
+    html = frappe.render_template(
+        'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
+    frappe.sendmail(
+        recipients=['abdulla.pi@voltechgroup.com',
+                    'k.senthilkumar@voltechgroup.com',
+                    'dineshbabu.k@voltechgroup.com',
+                    'Karthikeyan.n@voltechgroup.com',
+                    'Prabavathi.d@voltechgroup.com'
+
+                    ],
+        subject='VHRS Active Employees - ',
         message=html
     )
 
@@ -407,232 +567,81 @@ def client_feedback():
     cf.insert()
     cf.save(ignore_permissions=True)
 
-# -*- coding: utf-8 -*-
-# Copyright (c) 2017, VHRS and contributors
-# For license information, please see license.txt
 
-# @frappe.whitelist(allow_guest=True)
-# def attendance():
-#     global attendance_date, att_time
-#     userid = frappe.form_dict.get("userid")
-#     employee = frappe.db.get_value("Employee", {
-    #         "biometric_id": userid})
-    #     if employee:
-    #         date = time.strftime("%Y-%m-%d", time.gmtime(
-    #             int(frappe.form_dict.get("att_time"))))
+@frappe.whitelist()
+def capture_fp(name):
+    jsondata = {'Quality': '', 'Timeout': ''}
+    # frappe.errprint(active_url)
+    r = requests.post(
+        'http://10.81.234.7:8004/mfs100/capture', data=jsondata)
+    status = r.json()
+    if 'IsoTemplate' in status:
+        return status['IsoTemplate'], status['BitmapData']
 
-    #         attendance_date = time.strftime("%Y-%m-%d %X", time.gmtime(
-    #             int(frappe.form_dict.get("att_time"))))
 
-    #         doc = frappe.get_doc("Employee", employee)
-    #         query = """SELECT ro.name, ro.shift FROM `tabRoster` ro, `tabRoster Details` rod
-    # 		WHERE rod.parent = ro.name AND ro.from_date <= '%s' AND ro.to_date >= '%s'
-    # 		AND rod.employee = '%s' """ % (attendance_date, attendance_date, doc.employee)
-    #         roster = frappe.db.sql(query, as_list=1)
-    #         if len(roster) < 1:
-    #             attendance_id = frappe.db.get_value("Attendance", {
-    #                 "employee": employee, "attendance_date": date})
-    #             if attendance_id:
-    #                 attendance = frappe.get_doc(
-    #                     "Attendance", attendance_id)
-    #                 out_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                     int(frappe.form_dict.get("att_time"))))
-    #                 times = [out_time, attendance.in_time]
-    #                 attendance.out_time = max(times)
-    #                 attendance.in_time = min(times)
-    #                 attendance.db_update()
-    #                 frappe.db.commit()
-    #             else:
-    #                 attendance = frappe.new_doc("Attendance")
-    #                 in_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                     int(frappe.form_dict.get("att_time"))))
-    #                 attendance.update({
-    #                     "employee": employee,
-    #                     "employee_name": doc.employee_name,
-    #                     "attendance_date": date,
-    #                     "status": "Present",
-    #                     "in_time": in_time,
-    #                     "company": doc.company
-    #                 })
-    #                 attendance.save(ignore_permissions=True)
-    #                 attendance.submit()
-    #                 frappe.db.commit()
-    #             frappe.response.type = "text"
-    #             return "ok"
-    #         else:
-    #             doc.shift = roster[0][1]
+@frappe.whitelist()
+def verify_fp(fp):
+    # bio_ips = frappe.get_list("Biometric IP")
+    # conn = False
+    # for bio in bio_ips:
+    #     import socket
+    #     from urllib2 import urlopen, URLError, HTTPError
+    #     socket.setdefaulttimeout(23)  # timeout in seconds
+    #     url = 'http://' + bio['name'] + ':8004'
+    #     frappe.errprint(url)
+    #     try:
+    #         response = urlopen(url)
+    #     except HTTPError, e:
+    #         frappe.errprint(
+    #             'The server couldn\'t fulfill the request. Reason: %s' % str(e.code))
+    #     except URLError, e:
+    #         frappe.errprint(
+    #             'We failed to reach a server. Reason:%s' % str(e.reason))
+    #     else:
+    #         html = response.read()
+    #         active_url = url
+    #         conn = True
+    # if conn:
+    active_url = 'http://galfar.pagekite.me'
+    frappe.errprint(active_url)
+    jsondata = {'BioType': 'FMR', 'GalleryTemplate': fp}
+    r = requests.post(active_url + '/mfs100/match', data=jsondata)
+    status = r.json()
+    frappe.errprint(status)
+    if not status['ErrorCode'] == '-1307':
+        if 'Status' in status:
+            return 'Verified'
+        else:
+            return 'Not Verified'
+    else:
+        return 'MFS 100 Not Found'
 
-    #             shft = frappe.get_doc("Shift Details", doc.shift)
-    #             att_date = datetime.strptime(
-    #                 attendance_date, '%Y-%m-%d %H:%M:%S')
+# def create_journal_entry(self, je_payment_amount, user_remark):
+#     	default_payroll_payable_account = self.get_default_payroll_payable_account()
+# 		precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
 
-    #             if shft.in_out_required:
-    #                 shft_hrs = shft.hours_required_per_day.seconds
+# 		journal_entry = frappe.new_doc('Journal Entry')
+# 		journal_entry.voucher_type = 'Bank Entry'
+# 		journal_entry.user_remark = _('Payment of {0} from {1} to {2}')\
+# 			.format(user_remark, self.start_date, self.end_date)
+# 		journal_entry.company = self.company
+# 		journal_entry.posting_date = self.posting_date
 
-    #                 shft_indate = datetime.combine(att_date, datetime.min.time())
-    #                 shft_intime = shft_indate + timedelta(0, shft.in_time.seconds)
-    #                 shft_intime_max = shft_intime + \
-    #                     timedelta(0, shft.delayed_entry_allowed_time.seconds)
-    #                 shft_intime_min = shft_intime - \
-    #                     timedelta(0, shft.early_entry_allowed_time.seconds)
+# 		payment_amount = flt(je_payment_amount, precision)
 
-    #                 attendance_id = frappe.db.get_value("Attendance", {
-    #                     "employee": employee, "attendance_date": date})
-    #                 if attendance_id:
-    #                     attendance = frappe.get_doc(
-    #                         "Attendance", attendance_id)
-    #                     out_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                         int(frappe.form_dict.get("att_time"))))
-    #                     times = [out_time, attendance.in_time]
-    #                     attendance.out_time = max(times)
-    #                     attendance.in_time = min(times)
-    #                     total_hrs = time_diff_in_seconds(
-    #                         attendance.out_time, attendance.in_time)
-    #                     attendance.overtime = (total_hrs - shft_hrs) / 3600
-    #                     attendance.db_update()
-    #                     frappe.db.commit()
-    #                 else:
-    #                     if att_date >= shft_intime_min and att_date <= shft_intime_max:
-    #                         attendance = frappe.new_doc(
-    #                             "Attendance")
-    #                         intime = time.strftime("%H:%M:%S", time.gmtime(
-    #                             int(frappe.form_dict.get("att_time"))))
-    #                         attendance.update({
-    #                             "employee": employee,
-    #                             "employee_name": doc.employee_name,
-    #                             "attendance_date": shft_indate,
-    #                             "status": "Present",
-    #                             "in_time": intime,
-    #                             "company": doc.company
-    #                         })
-    #                         attendance.save(
-    #                             ignore_permissions=True)
-    #                         attendance.submit()
-    #                         frappe.db.commit()
-    #                     else:
-    #                         attendance = frappe.new_doc(
-    #                             "Attendance")
-    #                         intime = time.strftime("%H:%M:%S", time.gmtime(
-    #                             int(frappe.form_dict.get("att_time"))))
-    #                         attendance.update({
-    #                             "employee": employee,
-    #                             "employee_name": doc.employee_name,
-    #                             "attendance_date": shft_indate,
-    #                             "status": "Absent",
-    #                             "in_time": intime,
-    #                             "company": doc.company
-    #                         })
-    #                         attendance.save(
-    #                             ignore_permissions=True)
-    #                         frappe.db.commit()
-    #                 frappe.response.type = "text"
-    #                 return "ok"
+# 		journal_entry.set("accounts", [
+# 			{
+# 				"account": self.payment_account,
+# 				"credit_in_account_currency": payment_amount
+# 			},
+# 			{
+# 				"account": default_payroll_payable_account,
+# 				"debit_in_account_currency": payment_amount,
+# 				"reference_type": self.doctype,
+# 				"reference_name": self.name
+# 			}
+# 		])
+# 		journal_entry.save(ignore_permissions = True)
 
-    # @frappe.whitelist(allow_guest=True)
-    # def attendance():
-    #     global attendance_date, att_time
-    #     userid = frappe.form_dict.get("userid")
-    #     employee = frappe.db.get_value("Employee", {
-    #         "biometric_id": userid})
-    #     if employee:
-    #         date = time.strftime("%Y-%m-%d", time.gmtime(
-    #             int(frappe.form_dict.get("att_time"))))
 
-    #         attendance_date = time.strftime("%Y-%m-%d %X", time.gmtime(
-    #             int(frappe.form_dict.get("att_time"))))
-
-    #         doc = frappe.get_doc("Employee", employee)
-    #         query = """SELECT ro.name, ro.shift FROM `tabRoster` ro, `tabRoster Details` rod
-    # 		WHERE rod.parent = ro.name AND ro.from_date <= '%s' AND ro.to_date >= '%s'
-    # 		AND rod.employee = '%s' """ % (attendance_date, attendance_date, doc.employee)
-    #         roster = frappe.db.sql(query, as_list=1)
-    #         if len(roster) < 1:
-    #             attendance_id = frappe.db.get_value("Attendance", {
-    #                 "employee": employee, "attendance_date": date})
-    #             if attendance_id:
-    #                 attendance = frappe.get_doc(
-    #                     "Attendance", attendance_id)
-    #                 out_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                     int(frappe.form_dict.get("att_time"))))
-    #                 times = [out_time, attendance.in_time]
-    #                 attendance.out_time = max(times)
-    #                 attendance.in_time = min(times)
-    #                 attendance.db_update()
-    #             else:
-    #                 attendance = frappe.new_doc("Attendance")
-    #                 in_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                     int(frappe.form_dict.get("att_time"))))
-    #                 attendance.update({
-    #                     "employee": employee,
-    #                     "employee_name": doc.employee_name,
-    #                     "attendance_date": date,
-    #                     "status": "Present",
-    #                     "in_time": in_time,
-    #                     "company": doc.company
-    #                 })
-    #                 attendance.save(ignore_permissions=True)
-    #                 attendance.submit()
-    #                 frappe.db.commit()
-    #             frappe.response.type = "text"
-    #             return "ok"
-    #         else:
-    #             doc.shift = roster[0][1]
-
-    #             shft = frappe.get_doc("Shift Details", doc.shift)
-    #             att_date = datetime.strptime(
-    #                 attendance_date, '%Y-%m-%d %H:%M:%S')
-
-    #             if shft.in_out_required:
-    #                 shft_indate = datetime.combine(att_date, datetime.min.time())
-    #                 shft_intime = shft_indate + timedelta(0, shft.in_time.seconds)
-    #                 shft_intime_max = shft_intime + \
-    #                     timedelta(0, shft.delayed_entry_allowed_time.seconds)
-    #                 shft_intime_min = shft_intime - \
-    #                     timedelta(0, shft.early_entry_allowed_time.seconds)
-
-    #                 attendance_id = frappe.db.get_value("Attendance", {
-    #                     "employee": employee, "attendance_date": date})
-    #                 if attendance_id:
-    #                     attendance = frappe.get_doc(
-    #                         "Attendance", attendance_id)
-    #                     out_time = time.strftime("%H:%M:%S", time.gmtime(
-    #                         int(frappe.form_dict.get("att_time"))))
-    #                     times = [out_time, attendance.in_time]
-    #                     attendance.out_time = max(times)
-    #                     attendance.in_time = min(times)
-    #                     attendance.db_update()
-    #                 else:
-    #                     if att_date >= shft_intime_min and att_date <= shft_intime_max:
-    #                         attendance = frappe.new_doc(
-    #                             "Attendance")
-    #                         intime = time.strftime("%Y-%m-%d %X", time.gmtime(
-    #                             int(frappe.form_dict.get("att_time"))))
-    #                         attendance.update({
-    #                             "employee": employee,
-    #                             "employee_name": doc.employee_name,
-    #                             "attendance_date": shft_indate,
-    #                             "status": "Present",
-    #                             "in_time": intime,
-    #                             "company": doc.company
-    #                         })
-    #                         attendance.save(
-    #                             ignore_permissions=True)
-    #                         attendance.submit()
-    #                         frappe.db.commit()
-    #                     else:
-    #                         attendance = frappe.new_doc(
-    #                             "Attendance")
-    #                         intime = time.strftime("%Y-%m-%d %X", time.gmtime(
-    #                             int(frappe.form_dict.get("att_time"))))
-    #                         attendance.update({
-    #                             "employee": employee,
-    #                             "employee_name": doc.employee_name,
-    #                             "attendance_date": shft_indate,
-    #                             "status": "Absent",
-    #                             "in_time": intime,
-    #                             "company": doc.company
-    #                         })
-    #                         attendance.save(
-    #                             ignore_permissions=True)
-    #                 frappe.response.type = "text"
-    #                 return "ok"
+        
