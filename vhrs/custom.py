@@ -168,6 +168,17 @@ def mark_project_type():
             project.department = department
             project.db_update()
             frappe.db.commit()
+@frappe.whitelist()
+def so_territory():
+    sales_order = frappe.db.sql("""
+    select name,customer from `tabSales Order` where territory = 'All Territories' """, as_dict=1)
+    for so in sales_order:
+        territory = frappe.db.get_value(
+            "Customer", so.customer, "territory")
+        if territory:
+            sales_order = frappe.get_doc("Sales Order", so["name"])
+            sales_order.territory = territory
+            sales_order.db_update()
 
 
 @frappe.whitelist()
