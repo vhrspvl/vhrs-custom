@@ -1,0 +1,54 @@
+{
+ "add_total_row": 0, 
+ "apply_user_permissions": 1, 
+ "creation": "2019-02-22 14:52:48.289971", 
+ "disabled": 0, 
+ "docstatus": 0, 
+ "doctype": "Report", 
+ "idx": 0, 
+ "is_standard": "Yes", 
+ "letter_head": "VHRS", 
+ "modified": "2019-02-22 14:52:48.289971", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "Candidate Screening Sheet", 
+ "owner": "Administrator", 
+ "ref_doctype": "Candidate", 
+ "report_name": "Candidate Screening Sheet", 
+ "report_type": "Query Report", 
+ "roles": [
+  {
+   "role": "DnD Executive"
+  }, 
+  {
+   "role": "System Manager"
+  }, 
+  {
+   "role": "Projects Master Manager"
+  }, 
+  {
+   "role": "Project Leader"
+  }, 
+  {
+   "role": "Vendor"
+  }, 
+  {
+   "role": "Projects Manager"
+  }, 
+  {
+   "role": "RCS User"
+  }, 
+  {
+   "role": "Projects User"
+  }, 
+  {
+   "role": "RCS User"
+  }, 
+  {
+   "role": "DnD Manager"
+  }, 
+  {
+   "role": "Sales User"
+  }
+ ]
+}

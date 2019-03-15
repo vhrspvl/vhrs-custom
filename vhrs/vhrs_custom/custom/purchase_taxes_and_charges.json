@@ -1,0 +1,31 @@
+{
+ "custom_fields": [], 
+ "custom_perms": [], 
+ "doctype": "Purchase Taxes and Charges", 
+ "property_setters": [
+  {
+   "_assign": null, 
+   "_comments": null, 
+   "_liked_by": null, 
+   "_user_tags": null, 
+   "creation": "2018-12-21 12:25:03.129414", 
+   "default_value": null, 
+   "doc_type": "Purchase Taxes and Charges", 
+   "docstatus": 0, 
+   "doctype_or_field": "DocField", 
+   "field_name": "account_head", 
+   "idx": 0, 
+   "modified": "2018-12-21 12:25:03.129414", 
+   "modified_by": "sethusrinivasan.s@voltechgroup.com", 
+   "name": "Purchase Taxes and Charges-account_head-width", 
+   "owner": "sethusrinivasan.s@voltechgroup.com", 
+   "parent": null, 
+   "parentfield": null, 
+   "parenttype": null, 
+   "property": "width", 
+   "property_type": null, 
+   "value": "194"
+  }
+ ], 
+ "sync_on_migrate": 1
+}

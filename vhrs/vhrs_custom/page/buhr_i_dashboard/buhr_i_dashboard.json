@@ -1,0 +1,24 @@
+{
+ "content": null, 
+ "creation": "2019-02-20 11:59:20.136148", 
+ "docstatus": 0, 
+ "doctype": "Page", 
+ "icon": "", 
+ "idx": 0, 
+ "modified": "2019-02-20 12:59:31.387674", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "buhr-i-dashboard", 
+ "owner": "Administrator", 
+ "page_name": "BUHR I Dashboard", 
+ "roles": [
+  {
+   "role": "All"
+  }
+ ], 
+ "script": null, 
+ "standard": "Yes", 
+ "style": null, 
+ "system_page": 0, 
+ "title": "BUHR I Dashboard"
+}

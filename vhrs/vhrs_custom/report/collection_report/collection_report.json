@@ -1,0 +1,31 @@
+{
+ "add_total_row": 0, 
+ "apply_user_permissions": 1, 
+ "creation": "2019-01-27 17:52:38.201403", 
+ "disabled": 0, 
+ "docstatus": 0, 
+ "doctype": "Report", 
+ "idx": 0, 
+ "is_standard": "Yes", 
+ "letter_head": "BVS", 
+ "modified": "2019-01-27 23:10:03.744646", 
+ "modified_by": "Administrator", 
+ "module": "VHRS Custom", 
+ "name": "Collection Report", 
+ "owner": "Administrator", 
+ "query": "SELECT\npe.party as \"Customer:Link/Customer:300\",\npe.mode_of_payment as \"MoP::80\",\npe.received_amount as \"Amount::80\",\npe.posting_date as \"Date:Date:80\",\nsi.name as \"SI:Link/Sales Invoice:80\",\nsi.passport_no as \"PP::80\",\n(SELECT employee_name FROM `tabEmployee` WHERE `tabEmployee`.user_id = cs.customer_owner__cpc) AS \"CR::120\",\n(SELECT employee_name FROM `tabEmployee` WHERE `tabEmployee`.user_id = pe.executive) AS \"DnD::120\",\n(SELECT dle from `tabClosure` can where can.passport_no = si.passport_no and si.passport_no is not null limit 1) AS \"REC::120\",\npe.hrsic AS \"Unit::120\"\nFROM\n`tabPayment Entry` pe \nLEFT JOIN `tabPayment Entry Reference` per on per.parent = pe.name\nLEFT JOIN `tabSales Invoice` si on si.name = per.reference_name\nLEFT JOIN `tabCustomer` cs on cs.name = pe.party\nWHERE\npe.`posting_date` between '2019-01-01' AND NOW()\nAND\npe.payment_type='Receive'\nAND\npe.docstatus = 1\nAND\npe.allocate_payment_amount = 1\nAND\npe.party_type='Customer'\nORDER BY \npe.`posting_date` DESC;", 
+ "ref_doctype": "Payment Entry", 
+ "report_name": "Collection Report", 
+ "report_type": "Query Report", 
+ "roles": [
+  {
+   "role": "Accounts User"
+  }, 
+  {
+   "role": "Accounts Manager"
+  }, 
+  {
+   "role": "Accounts Executive"
+  }
+ ]
+}

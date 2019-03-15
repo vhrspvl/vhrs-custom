@@ -1,0 +1,31 @@
+{
+ "custom_fields": [], 
+ "custom_perms": [], 
+ "doctype": "Project User", 
+ "property_setters": [
+  {
+   "_assign": null, 
+   "_comments": null, 
+   "_liked_by": null, 
+   "_user_tags": null, 
+   "creation": "2017-01-19 17:43:56.980774", 
+   "default_value": null, 
+   "doc_type": "Project User", 
+   "docstatus": 0, 
+   "doctype_or_field": "DocField", 
+   "field_name": "user", 
+   "idx": 0, 
+   "modified": "2017-01-19 17:43:56.980774", 
+   "modified_by": "Administrator", 
+   "name": "Project User-user-width", 
+   "owner": "Administrator", 
+   "parent": null, 
+   "parentfield": null, 
+   "parenttype": null, 
+   "property": "width", 
+   "property_type": null, 
+   "value": "181"
+  }
+ ], 
+ "sync_on_migrate": 1
+}
