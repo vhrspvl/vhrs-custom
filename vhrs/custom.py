@@ -4,32 +4,34 @@
 
 from __future__ import unicode_literals
 import json
+import calendar
+import random
 import frappe
-import socket,os
+import socket
+import os
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils.data import today
-from frappe.utils import formatdate, cint, fmt_money, add_days
+from frappe.utils import formatdate, add_months, cint, fmt_money, add_days
 import requests
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
+from frappe import throw, _, scrub
 import time
+from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 # from netifaces import netifaces
 
-
-@frappe.whitelist(allow_guest=True)
-def bioupdate():
-    # restrict request from list of IP addresses
-    userid = frappe.form_dict.get("uid")
-    bu = frappe.new_doc("Biometric Update")
-    if userid:
-        bu.uid = userid
-    else:
-        bu.uid = "hi"
-    bu.save(ignore_permissions=True)
-    frappe.db.commit()
-    frappe.response.type = "text"
-    return "ok"
+# @frappe.whitelist()
+# def daily_quote():
+#     quote = """var d = new frappe.ui.Dialog({
+#             title: __("Thought of the Day"),
+#             'fields': [
+#                 {'fieldname': 'ht', 'fieldtype': 'HTML'},
+#                 ],
+#                 });
+#                 d.fields_dict.ht.$wrapper.html('<div style="width:550px;height:300px;"><iframe width="100%" height="100%" src="http://api.wpquoteoftheday.com/widget/1" frameborder="0" ></iframe></div>');
+#                 d.show();"""
+#     frappe.publish_realtime(event='eval_js',message=quote,user= frappe.session.user)
 
 
 @frappe.whitelist()
@@ -89,42 +91,59 @@ def send_dropped_list():
 
 @frappe.whitelist()
 def get_candidates(customer):
-    candidate_list=frappe.get_list("Closure", fields = ["name", "passport_no"], filters = {
+    candidate_list = frappe.get_list("Closure", fields=["name", "passport_no"], filters={
         "customer": customer})
     return candidate_list
 
 
 @frappe.whitelist()
 def add_customer(doc, method):
-    customer=frappe.db.get_value("User", {"email": frappe.session.user},
+    customer = frappe.db.get_value("User", {"email": frappe.session.user},
                                    ["customer"])
-    doc.customer=customer
+    doc.customer = customer
 
 
 @frappe.whitelist()
 def markic():
-    all_so=frappe.get_all("Sales Order", fields = ['name', 'territory'])
+    all_so = frappe.get_all("Sales Order", fields=['name', 'territory'])
     for so in all_so:
-        sales_order=frappe.get_doc("Sales Order", so["name"])
+        sales_order = frappe.get_doc("Sales Order", so["name"])
         if so['territory'] == 'India':
-            sales_order.hrsic='BUHR-III'
-            sales_order.flags.ignore_mandatory=True
-            sales_order.save(ignore_permissions = True)
+            sales_order.hrsic = 'BUHR-III'
+            sales_order.flags.ignore_mandatory = True
+            sales_order.save(ignore_permissions=True)
             frappe.db.commit()
 
 
 @frappe.whitelist()
 def bulk_mark_dnd_incharge():
-    closures=frappe.db.sql("""
-    select name,project from tabClosure where dnd_incharge is null
-    """, as_dict = 1)
+    closures = frappe.db.sql("""
+    select name,project from tabClosure where dnd_incharge is Null
+    """, as_dict=1)
     for closure in closures:
-        dnd_incharge=frappe.db.get_value(
+        dnd_incharge = frappe.db.get_value(
             "Project", closure["project"], "dnd_incharge")
         if dnd_incharge:
             closure = frappe.get_doc("Closure", closure["name"])
             closure.dnd_incharge = dnd_incharge
             closure.db_update()
+
+
+@frappe.whitelist()
+def update_buhr():
+    closures = frappe.db.sql("""
+    select * from `tabClosure` """, as_dict=1)
+    for closure in closures:
+        if closure:
+            piv = frappe.get_doc("Closure", closure["name"])
+            # print piv
+            piv.update({
+                "source_executive": piv.dle,
+                "cr_executive": piv.cpc,
+                "ca_executive": piv.bde,
+            })
+            piv.db_update()
+            frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -139,6 +158,22 @@ def bulk_mark_territory():
             task = frappe.get_doc("Task", t["name"])
             task.territory = territory
             task.db_update()
+
+
+@frappe.whitelist()
+def bulk_update_att():
+    att = frappe.db.sql("""
+    select * from `tabAttendance` """, as_dict=1)
+    for at in att:
+        branch = frappe.db.get_value(
+            "Employee", at["employee"], "branch")
+        shift = frappe.db.get_value(
+            "Employee", at["employee"], "shift")
+        if branch and shift:
+            attendance = frappe.get_doc("Attendance", at["name"])
+            attendance.branch = branch,
+            attendance.shift = shift
+            attendance.db_update()
 
 
 @frappe.whitelist()
@@ -168,6 +203,8 @@ def mark_project_type():
             project.department = department
             project.db_update()
             frappe.db.commit()
+
+
 @frappe.whitelist()
 def so_territory():
     sales_order = frappe.db.sql("""
@@ -179,6 +216,54 @@ def so_territory():
             sales_order = frappe.get_doc("Sales Order", so["name"])
             sales_order.territory = territory
             sales_order.db_update()
+
+
+@frappe.whitelist()
+def projects_buhr():
+    projects = frappe.db.sql("""
+    select name,cpc from `tabProject` where business_unit is null""", as_dict=1)
+    for project in projects:
+        business_unit = frappe.db.get_value(
+            "Employee", {'user_id': project.cpc}, ["business_unit"])
+        if business_unit:
+            project = frappe.get_doc("Project", project["name"])
+            project.business_unit = business_unit
+            project.db_update()
+
+
+@frappe.whitelist()
+def so_buhr():
+    so = frappe.db.sql("""
+    select * from `tabSales Order` where ca_executive is null""", as_dict=1)
+    for s in so:
+        ca_executive = frappe.db.get_value(
+            "Closure", {'passport_no': s.passport_no}, ["ca_executive"])
+        if ca_executive:
+            so = frappe.get_doc("Sales Order", s["name"])
+            so.ca_executive = ca_executive
+            so.db_update()
+
+
+@frappe.whitelist()
+def random():
+    for x in range(10):
+        x = random.randint(1, 101)
+        return x
+
+
+@frappe.whitelist()
+def grand_amount():
+    pi = frappe.db.sql("""
+    select * from `tabPurchase Invoice`""", as_dict=1)
+    for p in pi:
+        if p:
+            piv = frappe.get_doc("Purchase Invoice", p["name"])
+            # print piv
+            piv.update({
+                "advance_amount": piv.total_advance
+            })
+            piv.db_update()
+            frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -200,21 +285,41 @@ def mark_task_dept():
 def delete_bulk():
     left_employees = frappe.get_list(
         "Employee", fields=["employee_no", "name"], filters={"status": "Left", "is_deleted": 0})
-    print len(left_employees)
-    # for l in left_employees:
-    #     stgids = frappe.db.get_all("Service Tag")
-    #     for stgid in stgids:
-    #         uid = l.employee_no
-    #         url = "http://robot.camsunit.com/external/1.0/user/delete?uid=%s&stgid=%s" % (
-    #             uid, stgid.name)
-    #         r = requests.post(url)
-    #         if r.content == "OK":
-    #             emp = frappe.get_doc("Employee", l.name)
-    #             emp.is_deleted = 1
-    #             emp.db_update()
-    #             frappe.db.commit()
-    #             return r.content
+    # print len(left_employees)
+    for l in left_employees:
+        stgids = frappe.db.get_all("Service Tag")
+        for stgid in stgids:
+            uid = l.employee_no
+            url = "http://robot.camsunit.com/external/1.0/user/delete?uid=%s&stgid=%s" % (
+                uid, stgid.name)
+            r = requests.post(url)
+            if r.content == "OK":
+                emp = frappe.get_doc("Employee", l.name)
+                emp.is_deleted = 1
+                emp.db_update()
+                frappe.db.commit()
 
+
+@frappe.whitelist()
+def update_in_biometric_machine(uid, uname):
+    stgids = frappe.db.get_all("Service Tag")
+    # stgid = 'ST-KY18000181'
+    for stgid in stgids:
+        url = "http://robot.camsunit.com/external/1.0/user/update?uid=%s&uname=%s&stgid=%s" % (
+            uid, uname, stgid.name)
+        r = requests.post(url)
+    frappe.errprint(r.content)
+    return r.content
+
+
+@frappe.whitelist()
+def delete_from_biometric_machine(uid, uname):
+    stgids = frappe.db.get_all("Service Tag")
+    for stgid in stgids:
+        url = "http://robot.camsunit.com/external/1.0/user/delete?uid=%s&stgid=%s" % (
+            uid, stgid.name)
+        r = requests.post(url)
+    return r.content
 
 # # @frappe.whitelist()
 # def mark_dnd_incharge(doc,method):
@@ -309,19 +414,7 @@ def temp_so():
 
 
 @frappe.whitelist()
-def update_in_biometric_machine(uid, uname):
-    stgids = frappe.db.get_all("Service Tag")
-    # stgid = 'ST-KY18000181'
-    for stgid in stgids:
-        url = "http://robot.camsunit.com/external/1.0/user/update?uid=%s&uname=%s&stgid=%s" % (
-            uid, uname, stgid.name)
-        r = requests.post(url)
-    frappe.errprint(r.content)
-    return r.content
-
-
-@frappe.whitelist()
-def create_sales_order(name, customer, project, name1, passport_no, candidate_sc, client_sc, is_client, is_candidate):
+def create_sales_order(name, customer, project, name1, passport_no, client_sc, candidate_sc, business_unit, source_executive, ca_executive, is_candidate, is_client):
     territory = frappe.db.get_value("Customer", customer, "territory")
     cg = frappe.db.get_value("Customer", customer, "customer_group")
     if is_candidate or is_client:
@@ -349,9 +442,12 @@ def create_sales_order(name, customer, project, name1, passport_no, candidate_sc
                 so.customer = customer
                 so.project = project
                 so.payment_type = "Candidate"
-                so.passport_no = passport_no,
+                so.passport_no = passport_no
                 so.territory = territory
-                so.customer_group = cg
+                so.passport_no = passport_no
+                # so.business_unit = business_unit
+                # so.source_executive = source_executive
+                # so.ca_executive = ca_executive
                 so.append("items", {
                     "item_code": item.item_code,
                     "item_name": item.item_name,
@@ -373,6 +469,9 @@ def create_sales_order(name, customer, project, name1, passport_no, candidate_sc
                 so.passport_no = passport_no
                 so.territory = territory
                 so.customer_group = cg
+                # so.business_unit = business_unit
+                # so.source_executive = source_executive
+                # so.ca_executive = ca_executive
                 so.append("items", {
                     "item_code": item.item_code,
                     "item_name": item.item_name,
@@ -469,30 +568,6 @@ def get_zk():
 
 
 @frappe.whitelist()
-def send_daily_report():
-    custom_filter = {'date': today()}
-    report = frappe.get_doc('Report', "Employee Day Attendance")
-    columns, data = report.get_data(
-        limit=500 or 500, filters=custom_filter, as_dict=True)
-    html = frappe.render_template(
-        'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
-    frappe.sendmail(
-        recipients=['prabavathi.d@voltechgroup.com',
-                    'dineshbabu.k@voltechgroup.com',
-                    'sangeetha.a@voltechgroup.com',
-                    'sangeetha.s@voltechgroup.com',
-                    'jagan.k@voltechgroup.com',
-                    'dhavachelvan.d@voltechgroup.com',
-                    'selvaraj.g@voltechgroup.com',
-                    'mohanraj.e@voltechgroup.com'
-                    ],
-        subject='Employee Attendance Report - ' +
-        formatdate(today()),
-        message=html
-    )
-
-
-@frappe.whitelist()
 def send_active_report():
     custom_filter = {'status': "Active",
                      'employment_type': ["not in", ["Contract"]]}
@@ -502,16 +577,15 @@ def send_active_report():
     html = frappe.render_template(
         'frappe/templates/includes/print_table.html', {'columns': columns, 'data': data})
     frappe.sendmail(
-        recipients=['abdulla.pi@voltechgroup.com',
-                    'k.senthilkumar@voltechgroup.com',
+        recipients=['k.senthilkumar@voltechgroup.com',
                     'dineshbabu.k@voltechgroup.com',
                     'Karthikeyan.n@voltechgroup.com',
                     'Prabavathi.d@voltechgroup.com'
-
                     ],
         subject='VHRS Active Employees - ',
         message=html
     )
+    # frappe.errprint(html)
 
 
 @frappe.whitelist()
@@ -568,6 +642,21 @@ def punch_record():
             conn.disconnect()
 
 
+@frappe.whitelist()
+def mark_comment():
+    # l = frappe.get_doc("Lead",lead)
+    frappe.errprint("hi")
+    # l.add_comment(
+    #     doctype: "Communication",
+    #     communication_type: "Comment",
+    #     comment_type: comment_type || "Comment",
+    #     reference_doctype: "Lead",
+    #     reference_name: lead
+    #     content: appointment_on,
+    #     sender: "Administrator"
+    # )
+
+
 @frappe.whitelist(allow_guest=True)
 def client_feedback():
     first = frappe.form_dict.get("formID")
@@ -580,79 +669,146 @@ def client_feedback():
 
 
 @frappe.whitelist()
-def capture_fp(name):
-    jsondata = {'Quality': '', 'Timeout': ''}
-    # frappe.errprint(active_url)
-    r = requests.post(
-        'http://10.81.234.7:8004/mfs100/capture', data=jsondata)
-    status = r.json()
-    if 'IsoTemplate' in status:
-        return status['IsoTemplate'], status['BitmapData']
+def send_whatsapp_notification(message, recipient):
+    url = 'https://eu24.chat-api.com/instance18904/message?token=wada8j7hy80x6lmc'
+    for number in recipient.split(','):
+        payload = {'phone': number, 'body': message}
+        r = requests.get(url, params=payload)
+    # return r.content
 
 
 @frappe.whitelist()
-def verify_fp(fp):
-    # bio_ips = frappe.get_list("Biometric IP")
-    # conn = False
-    # for bio in bio_ips:
-    #     import socket
-    #     from urllib2 import urlopen, URLError, HTTPError
-    #     socket.setdefaulttimeout(23)  # timeout in seconds
-    #     url = 'http://' + bio['name'] + ':8004'
-    #     frappe.errprint(url)
-    #     try:
-    #         response = urlopen(url)
-    #     except HTTPError, e:
-    #         frappe.errprint(
-    #             'The server couldn\'t fulfill the request. Reason: %s' % str(e.code))
-    #     except URLError, e:
-    #         frappe.errprint(
-    #             'We failed to reach a server. Reason:%s' % str(e.reason))
-    #     else:
-    #         html = response.read()
-    #         active_url = url
-    #         conn = True
-    # if conn:
-    active_url = 'http://galfar.pagekite.me'
-    frappe.errprint(active_url)
-    jsondata = {'BioType': 'FMR', 'GalleryTemplate': fp}
-    r = requests.post(active_url + '/mfs100/match', data=jsondata)
-    status = r.json()
-    frappe.errprint(status)
-    if not status['ErrorCode'] == '-1307':
-        if 'Status' in status:
-            return 'Verified'
-        else:
-            return 'Not Verified'
-    else:
-        return 'MFS 100 Not Found'
-
-# def create_journal_entry(self, je_payment_amount, user_remark):
-#     	default_payroll_payable_account = self.get_default_payroll_payable_account()
-# 		precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
-
-# 		journal_entry = frappe.new_doc('Journal Entry')
-# 		journal_entry.voucher_type = 'Bank Entry'
-# 		journal_entry.user_remark = _('Payment of {0} from {1} to {2}')\
-# 			.format(user_remark, self.start_date, self.end_date)
-# 		journal_entry.company = self.company
-# 		journal_entry.posting_date = self.posting_date
-
-# 		payment_amount = flt(je_payment_amount, precision)
-
-# 		journal_entry.set("accounts", [
-# 			{
-# 				"account": self.payment_account,
-# 				"credit_in_account_currency": payment_amount
-# 			},
-# 			{
-# 				"account": default_payroll_payable_account,
-# 				"debit_in_account_currency": payment_amount,
-# 				"reference_type": self.doctype,
-# 				"reference_name": self.name
-# 			}
-# 		])
-# 		journal_entry.save(ignore_permissions = True)
+def update_task_ppcr():
+    tasks = frappe.get_all("Task", limit=5)
+    # print tasks
+    for task in tasks:
+        ppcr = frappe.db.count('Candidate', filters={
+                               "task": task.name, "status": ("in", "Sourced", "Submitted")})
+        print task.name, ppcr
 
 
-        
+# @frappe.whitelist()
+# def update_emp_code():
+#     checks = ["Verify Employment Check1", "Verify Employment Check2", "Verify Employment Check3", "Verify Employment Check4", "Verify Education Check1", "Verify Education Check2", "Verify Education Check3", "Verify Education Check4",
+#               "Verify Address Check1", "Verify Address Check2", "Verify Address Check3", "Verify Address Check4", "Verify Family Check1", "Verify Family Check2", "Verify Family Check3", "Verify Family Check4", "Verify Reference Check1", "Verify Reference Check2",
+#               "Verify Reference Check3", "Verify Reference Check4", "Verify Civil Check", "Verify Criminal Check", "Verify ID Check1", "Verify ID Check2", "Verify ID Check3", "Verify ID Check4", "Verify ID Check5",
+#               "Verify ID Check6"]
+#     for check in checks:
+#         app = frappe.get_all(check,fields=['applicant_id'])
+#         for a in app:
+#             emp_id = frappe.db.get_value("Applicant", {"name": a.applicant_id},
+#                                      ["client_employee_code"])
+#             c = frappe.get_doc(check,{"applicant_id": a.applicant_id})
+#             if c:
+#                 c.update({
+#                     "emp_code": emp_id
+#                 })
+#                 c.save(ignore_permissions=True)
+
+# @frappe.whitelist()
+# def bulk_cancel_si():
+#     si_list= []
+#     for i in si_list:
+#         si=frappe.get_doc("Sales Invoice",i)
+#         # si.cancel()
+#         # frappe.delete_doc("Sales Invoice",i)
+#         frappe.errprint(si)
+
+
+# @frappe.whitelist()
+# def mark_gst():
+#     sis=frappe.get_all("Sales Invoice",fields=["customer_address","name"])
+#     for si in sis:
+#         # print si.customer
+#         gstin=frappe.get_value("Address",si.customer_address,"gstin")
+#         if gstin:
+#             sii = frappe.get_doc('Sales Invoice',si.name)
+#             sii.customer_gstin = gstin
+#             print sii.name
+#             sii.db_update()
+#             frappe.db.commit()
+
+
+@frappe.whitelist()
+def unique_shortcode(code):
+    short = frappe.get_all("Employee", fields=[
+                           "short_code"], filters={"status": "Active"})
+    for sc in short:
+        if code == sc.short_code:
+            frappe.msgprint(_("Employee Code must be unique"))
+
+
+@frappe.whitelist()
+def del_candidate_sc():
+    # list_p = ["K1234567", "G2299501"]
+    # for i in list_p:
+    # # can = frappe.db.get_value("Closure","passspor_no":"K1234567")
+    # can = frappe.db.get_valu("Closure",fields = ["candidate_sc"],filters={"passport_no":"K1234567"})
+    # print can
+        # i.candidate_sc = ""
+    name_list = ["TCR01684",
+                 "TCR03177",
+                 "TCR09876",
+                 "TCR10154",
+                 "TCR03201",
+                 "TCR03144",
+                 "TCR03138",
+                 "TCR03145",
+                 "TCR03133",
+                 "TCR03137",
+                 "TCR03140",
+                 "TCR03134",
+                 "TCR03132",
+                 "TCR03142",
+                 "TCR03141",
+                 "TCR03169",
+                 "TCR03175",
+                 "TCR03143",
+                 "TCR03178",
+                 "TCR03186",
+                 "TCR03192",
+                 "TCR03189",
+                 "TCR03185",
+                 "TCR03170",
+                 "TCR03194",
+                 "TCR03171",
+                 "TCR03176",
+                 "TCR03179",
+                 "TCR03187",
+                 "TCR03190",
+                 "TCR03167",
+                 "TCR03180",
+                 "TCR03174",
+                 "TCR03183",
+                 "TCR03195",
+                 "TCR03188",
+                 "TCR03191",
+                 "TCR03184",
+                 "TCR03193",
+                 "TCR03168",
+                 "TCR03196",
+                 "TCR00302",
+                 "TCR00690",
+                 "TCR00684",
+                 "TCR00692",
+                 "TCR00683",
+                 "TCR00680",
+                 "TCR00691",
+                 "TCR00687",
+                 "TCR00685",
+                 "TCR00300",
+                 "TCR00689",
+                 "TCR00695",
+                 "TCR00682",
+                 "TCR00810",
+                 "TCR00811",
+                 "TCR00812", ]
+    for i in name_list:
+        can = frappe.get_doc('Closure', i)
+        # frappe.db.set_value("Closure",can.name,"candidate_sc","")
+        can.candidate_payment_applicable = 0
+        can.candidate_sc = 0
+        # can.db_update()
+        can.save(ignore_permissions=True)
+        # frappe.db.commit()
+        print can.candidate_sc

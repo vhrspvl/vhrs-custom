@@ -47,7 +47,7 @@ frappe.query_reports["Trial Balance for Party VHRS"] = {
             "fieldname": "party_type",
             "label": __("Party Type"),
             "fieldtype": "Select",
-            "options": ["Customer", "Supplier"],
+            "options": ["Customer", "Supplier", "Employee"],
             "default": "Customer"
         },
         {
@@ -61,6 +61,21 @@ frappe.query_reports["Trial Balance for Party VHRS"] = {
                     frappe.throw(__("Please select Party Type first"));
                 }
                 return party_type;
+            }
+        },
+        {
+            "fieldname": "account",
+            "label": __("Account"),
+            "fieldtype": "Link",
+            "options": "Account",
+            "get_query": function () {
+                var company = frappe.query_report_filters_by_name.company.get_value();
+                return {
+                    "doctype": "Account",
+                    "filters": {
+                        "company": company,
+                    }
+                }
             }
         },
         {

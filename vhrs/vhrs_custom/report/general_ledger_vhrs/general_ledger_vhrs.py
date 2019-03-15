@@ -99,8 +99,8 @@ def get_columns(filters):
 
     columns += [
         _("Voucher Type") + "::120", _("Voucher No") +
-        ":Dynamic Link/" + _("Voucher Type") +
-        ":160", _("Account") + ":Link/Account:200",
+        ":Dynamic Link/" + _("Voucher Type") + ":160",
+        _("Account") + ":Link/Account:200",
         _("Parent Account") + "::120", _("Party Type") +
         "::80", _("Party") + "::150",
         _("Project") + ":Link/Project:100", _("Cost Center") +
@@ -134,7 +134,7 @@ def get_gl_entries(filters):
 		select
 			posting_date,account, party_type, party,
 			sum(debit) as debit, sum(credit) as credit,
-			voucher_type, voucher_no, cost_center, project,
+			voucher_type, voucher_no,cost_center, project,
 			against_voucher_type, against_voucher,
 			remarks, against, is_opening {select_fields}
 		from `tabGL Entry`

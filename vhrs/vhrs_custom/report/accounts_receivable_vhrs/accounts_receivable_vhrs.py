@@ -115,7 +115,7 @@ class ReceivablePayableReport(object):
 
         data = []
         invoice_type = ""
-        hrsic = ""
+        business_unit = ""
         for gle in self.get_entries_till(self.filters.report_date, args.get("party_type")):
             if self.is_receivable_or_payable(gle, dr_or_cr, future_vouchers):
                 outstanding_amount, credit_note_amount = self.get_outstanding_amount(gle,
@@ -134,24 +134,24 @@ class ReceivablePayableReport(object):
                     if gle.voucher_type == 'Sales Invoice':
                         invoice_type = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "invoice_type")
-                        hrsic = frappe.db.get_value(
-                            "Sales Invoice", gle.voucher_no, "hrsic")
+                        business_unit = frappe.db.get_value(
+                            "Sales Invoice", gle.voucher_no, "business_unit")
 
                     if gle.voucher_type == 'Purchase Invoice':
-                        hrsic = frappe.db.get_value(
-                            "Purchase Invoice", gle.voucher_no, "hrsic")
+                        business_unit = frappe.db.get_value(
+                            "Purchase Invoice", gle.voucher_no, "business_unit")
 
                     if gle.voucher_type == 'Journal Entry':
                         invoice_type = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "invoice_type")
-                        hrsic = frappe.db.get_value(
+                        business_unit = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "hrsic")
 
                     if gle.voucher_type == 'Payment Entry':
                         invoice_type = frappe.db.get_value(
                             "Payment Entry", gle.voucher_no, "invoice_type")
-                        hrsic = frappe.db.get_value(
-                            "Payment Entry", gle.voucher_no, "hrsic")
+                        business_unit = frappe.db.get_value(
+                            "Payment Entry", gle.voucher_no, "business_unit")
 
                     item_name = []
                     item_code = []
@@ -167,7 +167,7 @@ class ReceivablePayableReport(object):
                     item_name = "/".join(item_name)
                     item_code = "/".join(item_code)
 
-                    row += [gle.voucher_type, invoice_type or '', item_code or '', item_name or '', hrsic or '',
+                    row += [gle.voucher_type, invoice_type or '', item_code or '', item_name or '', business_unit or '',
                             gle.voucher_no, due_date]
 
                     # get supplier bill details
