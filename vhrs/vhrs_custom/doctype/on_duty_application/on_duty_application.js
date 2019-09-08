@@ -79,7 +79,7 @@ frappe.ui.form.on('On Duty Application', {
         if (frm.doc.from_date && frm.doc.to_date && frm.doc.employee && frm.doc.leave_type) {
             // server call is done to include holidays in leave days calculations
             return frappe.call({
-                method: 'vhrs.vhrs_custom.doctype..get_number_of_leave_days',
+                method: 'vhrs.vhrs_custom.doctype.on_duty_application.on_duty_application.get_number_of_leave_days',
                 args: {
                     "employee": frm.doc.employee,
                     "leave_type": frm.doc.leave_type,

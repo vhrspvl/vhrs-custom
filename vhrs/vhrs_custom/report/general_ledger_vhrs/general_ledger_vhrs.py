@@ -100,7 +100,8 @@ def get_columns(filters):
     columns += [
         _("Voucher Type") + "::120", _("Voucher No") +
         ":Dynamic Link/" + _("Voucher Type") + ":160",
-        _("Account") + ":Link/Account:200",
+        _("Account") + ":Link/Account:200", _("Business Unit") +
+        ":Link/Business Unit:200",
         _("Parent Account") + "::120", _("Party Type") +
         "::80", _("Party") + "::150",
         _("Project") + ":Link/Project:100", _("Cost Center") +
@@ -149,7 +150,6 @@ def get_gl_entries(filters):
         parent_against_account = frappe.db.get_value(
             "Account", {"name": entry['against']}, ['parent'])
         # parent[a] =
-        frappe.errprint(parent_against_account)
     #     # gl_entries.append(parent_against_account)
     return gl_entries
 
@@ -327,7 +327,11 @@ def get_balance_row(label, balance, balance_in_account_currency=None):
 
 def get_result_as_list(data, filters):
     result = []
+    bu = ""
     for d in data:
+        if d.get("voucher_type"):
+            bu = frappe.get_value(d.get("voucher_type"),
+                                  d.get("voucher_no"), 'business_unit')
         row = [d.get("posting_date"), d.get("against"),
                d.get("debit"), d.get("credit")]
 
@@ -335,7 +339,7 @@ def get_result_as_list(data, filters):
             row += [d.get("debit_in_account_currency"),
                     d.get("credit_in_account_currency")]
 
-        row += [d.get("voucher_type"), d.get("voucher_no"), d.get("account"),
+        row += [d.get("voucher_type"), d.get("voucher_no"), d.get("account"), bu or "",
                 d.get("party_type"), d.get("party"), d.get("project"), d.get("cost_center"), d.get(
                     "against_voucher_type"), d.get("against_voucher"), d.get("remarks")
                 ]

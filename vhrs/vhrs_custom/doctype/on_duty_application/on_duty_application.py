@@ -29,6 +29,93 @@ class OnDutyApplication(Document):
         if self.status == "Open":
             frappe.throw(
                 _("Only Applications with status 'Approved' and 'Rejected' can be submitted"))
+        elif self.status == "Approved":
+            request_days = date_diff(self.to_date, self.from_date) + 1
+            for number in range(request_days):
+                attendance_date = add_days(self.from_date, number)
+                skip_attendance = validate_if_attendance_not_applicable(
+                    self.employee, attendance_date)
+                if not skip_attendance:
+                    att = frappe.db.exists(
+                        "Attendance", {"employee": self.employee, "attendance_date": attendance_date})
+                    if att:
+                        attendance = frappe.get_doc("Attendance", att)
+                        attendance.update({
+                            "status": "Present",
+                            "onduty_status": "On Duty"
+                            # "on_duty_application": doc.name
+                        })
+                        attendance.db_update()
+                        frappe.db.commit()
+                    else:
+                        attendance = frappe.new_doc("Attendance")
+                        attendance.employee = self.employee
+                        attendance.employee_name = self.employee_name
+                        attendance.status = "Present"
+                        attendance.attendance_date = attendance_date
+                        attendance.in_time = ""
+                        attendance.out_time = ""
+                        attendance.onduty_status = "On Duty"
+                        attendance.company = self.company
+                        attendance.save(ignore_permissions=True)
+                        attendance.submit()
+
+#         if self.status == "Approved":
+#             day = datetime.strptime(add_days(today(), -1), "%Y-%m-%d").date()
+
+#             from_date = add_days(day, -1)
+#             to_date = add_months(day, 12)
+#             diff = date_diff()
+
+#             if self.from_date <= self.to_date:
+#                 holiday_list = frappe.db.get_value(
+#                     "Employee", {'employee': self.employee}, ['holiday_list'])
+#                 holiday_date = frappe.db.get_value(
+#                     "Holiday", {'holiday_date': day,
+#                                 'parent': holiday_list}, ["holiday_date"]
+#                 )
+#                 if self.half_day == 0:
+#                     new_leaves_allocated = 0.5
+#                 if self.half_day == 1:
+#                     new_leaves_allocated = 1
+#                 lal_ids = frappe.get_doc("Leave Allocation", self.employee)
+#                 if lal_ids:
+#                     lal.new_leaves_allocated += new_leaves_allocated
+#                     lal.total_leaves_allocated += new_leaves_allocated
+#                     if lal.description:
+#                         lal.description += '<br>' + \
+#                             'Comp-off for {0}'.format(day)
+#                     else:
+#                         lal.description = '<br>' + \
+#                             'Comp-off for {0}'.format(day)
+#                     lal.db_update()
+#                     frappe.db.commit
+#                 else:
+#                     lal = frappe.new_doc("Leave Allocation")
+#                     lal.employee = od.employee
+#                     lal.leave_type = 'Compensatory Off'
+#                     lal.from_date = day
+#                     lal.to_date = to_date
+#                     lal.new_leaves_allocated = new_leaves_allocated
+#                     lal.description = 'Comp-off for {0}'.format(day)
+#                     lal.save(ignore_permissions=True)
+#                     lal.submit()
+#                     frappe.db.commit()
+
+
+# def get_lal(emp, day):
+#     lal = frappe.db.sql("""select name from `tabLeave Allocation`
+#                 where employee = %s and %s between from_date and to_date and leave_type='Compensatory Off'
+#             and docstatus = 1""", (emp, day), as_dict=True)
+#     return lal
+
+#     # od_ids = frappe.get_list('On Duty Application', {"docstatus" : 2})
+    # for od in od_ids:
+    #     if od:
+    #         datetime.strptime(add_days(tdatetime.strptime(add_days(today(),-1), "%Y-%m-%d").date()oday(),-1), "%Y-%m-%d").date()
+    #         new_leaves_allocated = 0
+    #         att = frappe.get_doc("Attendance", att_id)
+
 
     def validate(self):
         self.validate_approver()
@@ -99,38 +186,38 @@ class OnDutyApplication(Document):
     #             attendance_obj.cancel()
 
 
-@frappe.whitelist()
-def on_duty_mark(doc, method):
-    if doc.status == "Approved":
-        request_days = date_diff(doc.to_date, doc.from_date) + 1
-        for number in range(request_days):
-            attendance_date = add_days(doc.from_date, number)
-            skip_attendance = validate_if_attendance_not_applicable(
-                doc.employee, attendance_date)
-            if not skip_attendance:
-                att = frappe.db.exists(
-                    "Attendance", {"employee": doc.employee, "attendance_date": attendance_date})
-                if att:
-                    attendance = frappe.get_doc("Attendance", att)
-                    attendance.update({
-                        "status": "Present",
-                        "onduty_status": "On Duty"
-                        # "on_duty_application": doc.name
-                    })
-                    attendance.db_update()
-                    frappe.db.commit()
-                else:
-                    attendance = frappe.new_doc("Attendance")
-                    attendance.employee = doc.employee
-                    attendance.employee_name = doc.employee_name
-                    attendance.status = "Present"
-                    attendance.attendance_date = attendance_date
-                    attendance.in_time = ""
-                    attendance.out_time = ""
-                    attendance.onduty_status = "On Duty"
-                    attendance.company = doc.company
-                    attendance.save(ignore_permissions=True)
-                    attendance.submit()
+# @frappe.whitelist()
+# def on_duty_mark(doc, method):
+#     if doc.status == "Approved":
+#         request_days = date_diff(doc.to_date, doc.from_date) + 1
+#         for number in range(request_days):
+#             attendance_date = add_days(doc.from_date, number)
+#             skip_attendance = validate_if_attendance_not_applicable(
+#                 doc.employee, attendance_date)
+#             if not skip_attendance:
+#                 att = frappe.db.exists(
+#                     "Attendance", {"employee": doc.employee, "attendance_date": attendance_date})
+#                 if att:
+#                     attendance = frappe.get_doc("Attendance", att)
+#                     attendance.update({
+#                         "status": "Present",
+#                         "onduty_status": "On Duty"
+#                         # "on_duty_application": doc.name
+#                     })
+#                     attendance.db_update()
+#                     frappe.db.commit()
+#                 else:
+#                     attendance = frappe.new_doc("Attendance")
+#                     attendance.employee = doc.employee
+#                     attendance.employee_name = doc.employee_name
+#                     attendance.status = "Present"
+#                     attendance.attendance_date = attendance_date
+#                     attendance.in_time = ""
+#                     attendance.out_time = ""
+#                     attendance.onduty_status = "On Duty"
+#                     attendance.company = doc.company
+#                     attendance.save(ignore_permissions=True)
+#                     attendance.submit()
 
 
 def validate_if_attendance_not_applicable(employee, attendance_date):

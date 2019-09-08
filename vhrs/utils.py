@@ -5,10 +5,12 @@
 from __future__ import unicode_literals
 import json
 import frappe
-from frappe.model.document import Document
-from frappe.model.naming import make_autoname
+from frappe.utils.data import today
+from frappe.utils import cstr, formatdate, add_months, cint, fmt_money, add_days, flt
+import requests
+from datetime import datetime, timedelta, date
+from frappe import throw, _, scrub
 import time
-from frappe.utils.data import today, get_timestamp, formatdate
 
 
 @frappe.whitelist(allow_guest=True)
@@ -19,6 +21,7 @@ def attendance():
         employee = frappe.db.get_value("Employee", {
             "employee_no": userid, 'status': 'Active'})
         if employee:
+            log_error("Att Type", frappe.form_dict.get("att_type"))
             date = time.strftime("%Y-%m-%d", time.gmtime(
                 int(frappe.form_dict.get("att_time"))))
             name, company = frappe.db.get_value(
@@ -149,3 +152,154 @@ def send_present_alert(employee, name, in_time, date):
         submission of Attendance is subject to your Out Time.</p><br> Regards <br>HR Team
         """ % (name, in_time)
     )
+
+
+@frappe.whitelist()
+def punch_record(curdate):
+    from zk import ZK, const
+    conn = None
+    zk = ZK('192.168.1.65', port=4370, timeout=5)
+    try:
+        conn = zk.connect()
+        attendance = conn.get_attendance()
+        # curdate = datetime.now().date()
+        # curdate = '2019-04-03'
+        for att in attendance:
+            # if att.user_id == '170':
+            date = att.timestamp.date()
+            if date == curdate:
+                mtime = att.timestamp.time()
+                mtimef = timedelta(
+                    hours=mtime.hour, minutes=mtime.minute, seconds=mtime.second)
+                userid = att.user_id
+                employee = frappe.db.get_value("Employee", {
+                    "employee_no": userid, "status": "Active"})
+                if employee:
+                    doc = frappe.get_doc("Employee", employee)
+                    already_exist = False
+                    pr_id = frappe.db.get_value("Punch Record", {
+                        "employee": employee, "attendance_date": date})
+                    if pr_id:
+                        pr = frappe.get_doc("Punch Record", pr_id)
+                        # max(i.punchtime)
+                        for i in pr.timetable:
+                            if i.punch_time == mtimef:
+                                already_exist = True
+                        if not already_exist:
+                            pr.append("timetable", {
+                                "punch_time": str(mtime)
+                            })
+                            pr.save(ignore_permissions=True)
+                    else:
+                        pr = frappe.new_doc("Punch Record")
+                        pr.employee = employee
+                        pr.employee_name = doc.employee_name
+                        pr.attendance_date = date
+                        pr.append("timetable", {
+                            "punch_time": mtime
+                        })
+                        pr.insert()
+                        pr.save(ignore_permissions=True)
+    except Exception, e:
+        print "Process terminate : {}".format(e)
+    finally:
+        if conn:
+            conn.disconnect()
+
+
+@frappe.whitelist()
+def mark_attendance(day):
+    # day = datetime.strptime('2019-07-15', "%Y-%m-%d").date()
+    # day = '2019-07-03'
+    # in_time = out_time = ""
+    # employees = ['24']
+    employees = frappe.get_all(
+        "Employee", {"status": "Active", "employment_type": ("!=", "Contract")})
+    for emp in employees:
+        # print emp.name
+        emp = emp.name
+        doj = frappe.get_value("Employee", emp, "date_of_joining")
+        shift = frappe.get_value("Employee", emp, "shift")
+        wh_for_halfday = timedelta(hours=5)
+        wh_for_fullday = timedelta(hours=9, minutes=30)
+        if shift:
+            wh_for_halfday = frappe.get_value(
+                "Shift", shift, ["wh_for_halfday"])
+            wh_for_fullday = frappe.get_value(
+                "Shift", shift, ["wh_for_fullday"])
+        # frappe.errprint(doj)
+        # frappe.errprint(day)
+        if doj <= day:
+            times = []
+            twh = ""
+            status = 'Absent'
+            punch_record = frappe.db.exists(
+                "Punch Record", {"attendance_date": day, "employee": emp})
+            if punch_record:
+                pr = frappe.get_doc("Punch Record", punch_record)
+                # frappe.errprint(pr.employee_name)
+                # frappe.errprint(pr.attendance_date)
+                working_shift = frappe.db.get_value(
+                    "Employee", {'employee': emp}, ['shift'])
+                for t in pr.timetable:
+                    times.append(t.punch_time)
+                in_time = min(times)
+                out_time = max(times)
+                if in_time == out_time:
+                    out_time = ""
+                att_id = frappe.get_value(
+                    "Attendance", {"attendance_date": day, "employee": emp})
+                if att_id:
+                    if in_time and out_time:
+                        twh = out_time - in_time
+
+                        if twh > wh_for_halfday:
+                            status = 'Half Day'
+                        if twh >= wh_for_fullday:
+                            status = 'Present'
+                    # if not punch_record and att_id['in_time'] and att_id['out_time']:
+                    #     in_time = in_time
+                    #     out_time = out_time
+
+                    att = frappe.get_doc("Attendance", att_id)
+                    att.update({
+                        "in_time": in_time,
+                        "out_time": out_time,
+                        "total_working_hours": twh,
+                        "status": status
+                    })
+                    if att.docstatus == 1:
+                        att.db_update()
+                        frappe.db.commit()
+                    else:
+                        att.save(ignore_permissions=True)
+                        att.submit()
+                        frappe.db.commit()
+                else:
+                    att = frappe.new_doc("Attendance")
+                    att.update({
+                        "employee": emp,
+                        "employment_type": frappe.get_value("Employee", emp, "employment_type"),
+                        "attendance_date": day,
+                        "shift": working_shift,
+                        "status": status,
+                        # "in_time": in_time,
+                    })
+                    att.save(ignore_permissions=True)
+                    frappe.db.commit()
+
+
+@frappe.whitelist()
+def fetch_from_ui(from_date, to_date, fetch_type):
+    from_date = (datetime.strptime(str(from_date), '%Y-%m-%d')).date()
+    to_date = (datetime.strptime(str(to_date), '%Y-%m-%d')).date()
+    for preday in daterange(from_date, to_date):
+        if fetch_type == "att":
+            mark_attendance(preday)
+        else:
+            punch_record(preday)
+
+
+def daterange(date1, date2):
+    for n in range(int((date2 - date1).days)+1):
+        yield date1 + timedelta(n)

@@ -24,6 +24,8 @@ frappe.get_desktop_icons = function (show_hidden, show_global) {
             } else if (m.module_name === 'Setup' && frappe.user.has_role('System Manager')) {
                 out = true;
 
+            } else if (frappe.user.has_role('BVS Customer') && m.module_name === 'Selling' || m.module_name === 'Recruitment' || m.module_name === 'Contacts' || m.module_name === 'Human Resources' || m.module_name === 'Contacts' || m.module_name === 'Projects' || m.module_name === 'Tools') {
+                out = false;
             } else {
                 out = frappe.boot.user.allow_modules.indexOf(m.module_name) !== -1
             }

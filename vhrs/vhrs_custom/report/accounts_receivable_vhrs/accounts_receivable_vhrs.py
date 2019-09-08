@@ -145,7 +145,7 @@ class ReceivablePayableReport(object):
                         invoice_type = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "invoice_type")
                         business_unit = frappe.db.get_value(
-                            "Journal Entry", gle.voucher_no, "hrsic")
+                            "Journal Entry", gle.voucher_no, "business_unit")
 
                     if gle.voucher_type == 'Payment Entry':
                         invoice_type = frappe.db.get_value(

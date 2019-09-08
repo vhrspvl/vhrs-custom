@@ -109,14 +109,14 @@
    "_comments": null, 
    "_liked_by": null, 
    "_user_tags": null, 
-   "creation": "2018-03-16 17:09:31.103334", 
+   "creation": "2019-04-04 09:26:28.285276", 
    "default_value": null, 
    "doc_type": "Sales Order Item", 
    "docstatus": 0, 
    "doctype_or_field": "DocField", 
    "field_name": "item_name", 
    "idx": 0, 
-   "modified": "2018-03-16 17:09:31.103334", 
+   "modified": "2019-04-04 09:26:28.285276", 
    "modified_by": "sahayasaji.s@voltechgroup.com", 
    "name": "Sales Order Item-item_name-width", 
    "owner": "sahayasaji.s@voltechgroup.com", 
@@ -125,7 +125,7 @@
    "parenttype": null, 
    "property": "width", 
    "property_type": null, 
-   "value": "191"
+   "value": "160"
   }, 
   {
    "_assign": null, 

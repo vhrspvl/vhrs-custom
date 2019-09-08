@@ -17,7 +17,7 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/vhrs/css/vhrs.css"
-# app_include_js = "/assets/vhrs/js/mute_learn.js"
+# app_include_js = "/assets/vhrs/js/qrcode.min.js"
 # app_include_js = "/assets/vhrs/js/vhrs.js"
 # on_login = "vhrs.custom.daily_quote"
 # include js, css files in header of web template
@@ -83,15 +83,26 @@ fixtures = ["Custom Field", "Custom Script", "Property Setter"]
 
 doc_events = {
 
-    "Project": {
-        "validate": "vhrs.custom.mark_territory"
-    },
+    # "Project": {
+    #     "validate": "vhrs.custom.mark_territory"
+    # },
+    # "Closure": {
+    #     "on_update": "vhrs.custom.so_from_import"
+    # }
+    # "Performance Management Self":
+    # {
+    #     "on_submit": "vhrs.custom.update_pm_manager"
+    # },
+    # "Performance Management Manager":
+    # {
+    #     "on_submit": "vhrs.custom.update_pm_reviewer"
+    # },
 
     # "Attendance": {
     #     "validate": "vhrs.custom.validatetime"
     # }
-    # "Project": {
-    #     "on_update": "vhrs.utils.update_status"
+    # "Attendance Log": {
+    #     "on_update": "vhrs.utility.post_att"
     # }
 }
 
@@ -111,12 +122,18 @@ scheduler_events = {
     ],
     "daily": [
         "vhrs.custom.send_active_report",
-        "vhrs.permission.mark_comp_off"
+        "vhrs.permission.mark_comp_off_new",
+        "vhrs.custom.update_holiday_attendance",
+        "vhrs.custom.update_status",
+        "vhrs.custom.update_task_status"
+        # "vhrs.permission.update_drafts",
+
     ],
     "monthly": [
         # "vhrs.tasks.monthly"
         "vhrs.email_alerts.speciallist",
-        "vhrs.permission.mark_cl"
+        "vhrs.permission.mark_cl",
+        # "vhrs.custom.update_pm_basic"
     ],
     "cron": {
         "45 07 * * *": [
@@ -124,7 +141,7 @@ scheduler_events = {
         ],
         "00 09 * * *": [
             "vhrs.email_alerts.send_preday_report",
-            "vhrs.permission.update_att"
+            "vhrs.permission.update_autopresent"
         ],
         "16 09 * * *": [
             "vhrs.permission.mark_absent_g"
@@ -146,15 +163,13 @@ scheduler_events = {
         "15 0 */2 * * ": [
             "vhrs.permission.mark_att"
         ],
-        "00 22 * * *": [
+        "50 23 * * *": [
+            "vhrs.permission.total_working_hours",
             "vhrs.permission.half_day"
         ],
-        "00 23 * * *": [
-            "vhrs.permission.total_working_hours",
+        "55 23 * * *": [
             "vhrs.email_alerts.send_absent_alert",
             "vhrs.email_alerts.send_failed_punch_alert"
-        ],
-        "05 23 * * *": [
             "vhrs.permission.update_attendance"
         ],
     }

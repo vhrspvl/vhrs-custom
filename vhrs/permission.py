@@ -17,7 +17,7 @@ from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 
 
 @frappe.whitelist()
-def update_att():
+def update_autopresent():
     day = date.today()
     employees = frappe.get_all(
         'Employee', filters={"status": "Active", "branch": ("in", ("Qatar", "UAE", "Oman", "Kuwait"))})
@@ -54,7 +54,8 @@ def mark_absent_a():
     try:
         day = date.today()
         employees = frappe.get_all(
-            'Employee', filters={"shift": "A", "status": "Active", "company": ("!=", 'VOLTECH HUMAN RESOURCE PVT. LTD. NEPAL')})
+            'Employee', filters={"shift": "A", "status": "Active", "company": ("!=", 'VOLTECH HUMAN RESOURCE PVT. LTD. NEPAL'),"employment_type":("!=","Contract")})
+        
         for employee in employees:
             status = check_record(employee.name, day)
             holiday_list = frappe.db.get_value(
@@ -124,7 +125,8 @@ def mark_absent_g():
     try:
         day = date.today()
         employees = frappe.get_all(
-            'Employee', filters={"shift": "G", "status": "Active", "company": ("!=", 'VOLTECH HUMAN RESOURCE PVT. LTD. NEPAL')})
+            'Employee', filters={"shift": "G", "status": "Active", "company": ("!=", 'VOLTECH HUMAN RESOURCE PVT. LTD. NEPAL'),"employment_type":("!=","Contract")})
+        print employees
         for employee in employees:
             status = check_record(employee.name, day)
             holiday_list = frappe.db.get_value(
@@ -219,7 +221,7 @@ def update_att_a():
     for att_id in att_ids:
         if att_id:
             att = frappe.get_doc("Attendance", att_id)
-            if att.status == "Absent" and att.in_time:
+            if att and att.in_time:
                 in_time_f = datetime.strptime(
                     att.in_time, '%H:%M:%S')
                 in_time = in_time_f.strftime("%H:%M:%S")
@@ -228,7 +230,8 @@ def update_att_a():
                         att.employee, att.attendance_date, att.in_time)
                     if status:
                         att.update({
-                            "status": status
+                            "status": "Present",
+                            "permission_status": status
                         })
                         att.save(ignore_permissions=True)
                         att.submit()
@@ -240,14 +243,18 @@ def update_att_g():
     day = date.today()
     att_ids = frappe.get_list('Attendance', filters={"shift": "G",
                                                      "docstatus": 0, "attendance_date": day})
+    # print att_ids
     for att_id in att_ids:
         if att_id:
+            shift_in_time = frappe.get_value("Shift","G","in_time") + frappe.get_value("Shift","G","grace_time")
+            shift_max_time = frappe.get_value("Shift","G","max_permission_time")
             att = frappe.get_doc("Attendance", att_id)
-            if att.status == "Absent" and att.in_time:
+            if att and att.in_time:
                 in_time_f = datetime.strptime(
                     att.in_time, '%H:%M:%S')
-                in_time = in_time_f.strftime("%H:%M:%S")
-                if(in_time < '09:16:00'):
+                in_time = timedelta(hours=in_time_f.hour, minutes=in_time_f.minute, seconds=in_time_f.second)
+                # in_time = in_time_f.strftime("%H:%M:%S")
+                if(in_time < shift_in_time):
                     att.update(
                         {
                             "status": "Present"
@@ -257,18 +264,16 @@ def update_att_g():
                     att.submit()
                     frappe.db.commit()
 
-                if in_time >= '09:16:00' and in_time <= '11:00:00':
+                if in_time >= shift_in_time and in_time <= shift_max_time:
                     status = check_permission(
                         att.employee, att.attendance_date, att.in_time)
-                    print status
                     if status:
-                        print status
                         att.update({
-                            "status": status
+                            "status": "Present",
+                            "permission_status": status
                         })
                         att.save(ignore_permissions=True)
                         att.submit()
-                        # att.db_update()
                         frappe.db.commit()
 
 
@@ -303,8 +308,7 @@ def check_permission(employee, attendance_date, in_time):
     elif p_count in range(18, 32):
         status = "Absent"
 
-    send_permission_alert(employee, attendance_date, in_time, p_count, status)
-    print status
+    # send_permission_alert(employee, attendance_date, in_time, p_count, status)
     return status
 
 
@@ -321,6 +325,89 @@ def mark_permission(emp, att_date):
     frappe.db.commit()
     return True
 
+def run_permission():
+    # day = date.today()
+    day = '2019-08-21'
+    att_ids = frappe.get_list('Attendance', filters={
+        "docstatus": ('!=', 2), "attendance_date": day})
+    for att_id in att_ids:
+        if att_id:
+            att = frappe.get_doc("Attendance", att_id)
+            if att.in_time and att.out_time:
+                in_time_f = datetime.strptime(
+                        att.in_time, '%H:%M:%S')
+                out_time_f = datetime.strptime(
+                    att.out_time, '%H:%M:%S')
+                worked_hrs = out_time_f - in_time_f
+                working_hrs = str(worked_hrs)
+                total_working_hour = datetime.strptime(
+                    working_hrs, '%H:%M:%S')
+                total_working_hours = total_working_hour.strftime('%H:%M:%S')
+                # print att.employee_name, total_working_hours
+                # print total_working_hours
+                hours=timedelta(hours=total_working_hour.hour, minutes=total_working_hour.minute, seconds=total_working_hour.second)
+                f_max = timedelta(hours = 9.5)
+                p_max = timedelta(hours = 8.5)
+                cp_max = timedelta(hours = 8)
+                h_max = timedelta(hours =5)
+                # if att.shift == "C":
+                #     c_max = timedelta(hours = 9)
+                #     if hours <= c_max and hours >= cp_max:
+                #         status = "Present"
+                    # elif hours >= h_max:
+                    #     status = "Half Day"
+                    # else:
+                    #     status = "Absent"
+                        # print hours,att.employee_name
+                        # att.update({
+                        # "total_working_hour": total_working_hours,
+                        # "status": status
+                        # })
+                        # att.db_update()
+                        # frappe.db.commit()
+                if att.shift == "A":
+                    a_max = timedelta(hours = 8)
+                    ap_max = timedelta(hours = 7)
+                    if hours <= a_max and hours >= ap_max:
+                        status = "Present"
+                        print hours,att.employee_name,status
+                    elif hours >= ap_max:
+                        status = "Half Day"
+                    else:
+                        status = "Absent"
+                        
+                        per = mark_permission(att.employee,day)
+                        att.update({
+                        "total_working_hour": total_working_hours,
+                        "status": status
+                        })
+                        att.db_update()
+                        frappe.db.commit()
+                # elif att.status == "On Duty":
+                #     pass
+                # elif hours <= f_max and hours >= p_max:
+                    # print att.employee_name,hours
+                    # per = mark_permission(att.employee,day)
+                    # status = "Present"
+                    # print att.employee_name,hours,status
+                # elif hours >= p_max:
+                #     status = "Half Day"
+                # else:
+                #     status = "Absent"
+                    # att.update({
+                    #     "total_working_hour": total_working_hours,
+                    #     "status": status
+                    # })
+                    # att.db_update()
+                    # frappe.db.commit()
+                
+def per_count():
+    # employees = frappe.db.sql("""select name from `tabEmployee`
+    #             where status = "Active" and  employment_type != "Contract" and company = "Voltech HR Services Private Limited" """, as_dict=True)
+    # for emp in employees:
+    per_count = frappe.db.sql("""select count(*) as count,employee from `tabAttendance Permission` where permission_date between "2019-08-01" and "2019-08-31" group by employee """,as_dict=1)
+    for per in per_count:
+        print per.employee, per.count
 
 def get_first_day(dt, d_years=0, d_months=0):
     # d_years, d_months are "deltas" to apply to dt
@@ -411,16 +498,23 @@ def update_attendance():
 
 @frappe.whitelist()
 def total_working_hours():
-    day = date.today()
-    # day = '2019-02-20'
+    # day = date.today()
+    day = '2019-08-21'
     total_working_hours = 0
     worked_hrs = 0
-    att_ids = frappe.get_all('Attendance', filters={"docstatus": ('!=', 2),
-                                                    "attendance_date": day, "company": "Voltech HR Services Private Limited", "business_unit": ('!=', 'BUHR-4')})
+    att_ids = frappe.get_all('Attendance', filters={"attendance_date": day, "company": "Voltech HR Services Private Limited", "business_unit": ('!=', 'BUHR-4')})
     for att_id in att_ids:
+        # print att_id
         if att_id:
             att = frappe.get_doc("Attendance", att_id)
-            if att.in_time and att.out_time:
+            if att.in_time and not att.out_time:
+                att.update({
+                    "total_working_hour": "",
+                    "status": "Absent"
+                })
+                att.db_update()
+                frappe.db.commit()
+            elif att.in_time and att.out_time:
                 in_time_f = datetime.strptime(
                     att.in_time, '%H:%M:%S')
                 out_time_f = datetime.strptime(
@@ -430,11 +524,45 @@ def total_working_hours():
                 total_working_hour = datetime.strptime(
                     working_hrs, '%H:%M:%S')
                 total_working_hours = total_working_hour.strftime('%H:%M:%S')
-                att.update({
-                    "total_working_hour": total_working_hours
-                })
-                att.db_update()
-                frappe.db.commit()
+                # print att.employee_name, total_working_hours
+                # print total_working_hours
+                hours=timedelta(hours=total_working_hour.hour, minutes=total_working_hour.minute, seconds=total_working_hour.second)
+                f_max = timedelta(hours = 9.5)
+                h_max = timedelta(hours =5)
+                # if att.shift == "C":
+                #     c_max = timedelta(hours = 9)
+                #     if hours >= c_max:
+                #         status = "Present"
+                #     elif hours >= h_max:
+                #         status = "Half Day"
+                #     else:
+                #         status = "Absent"
+                if att.shift == "A":
+                    a_max = timedelta(hours = 8)
+                    b_max = timedelta(hours = 4)
+                    print hours,a_max
+                    if hours >= a_max:
+                        status = "Present"
+                    elif hours >= b_max:
+                        status = "Half Day"
+                    else:
+                        status = "Absent"
+                # elif att.status == "On Duty":
+                #     pass
+                # elif hours >= f_max:
+                #     status = "Present"
+                # elif hours >= h_max:
+                #     status = "Half Day"
+                # else:
+                #     status = "Absent"
+                
+                # att.update({
+                #     "total_working_hour": total_working_hours,
+                #     "status": status
+                # })
+                # att.db_update()
+                # frappe.db.commit()
+            
 
 
 @frappe.whitelist()
@@ -467,8 +595,8 @@ def mark_hd():
 
 @frappe.whitelist()
 def half_day():
-    # day = date.today()
-    day = '2019-02-20'
+    day = date.today()
+    # day = '2019-02-20'
     total_working_hours = 0
     worked_hrs = 0
     working_hrs = 0
@@ -512,56 +640,136 @@ def half_day():
                     frappe.db.commit()
 
 
+# @frappe.whitelist()
+# def mark_comp_off():
+#     day = datetime.strptime(add_days(today(),-1), "%Y-%m-%d").date()
+#     # day = date.today()
+#     from_date = add_days(day, -1)
+#     to_date = add_months(day, 12)
+#     # print day
+#     att_ids = frappe.get_list('Attendance', {"docstatus" : 2, "attendance_date": day, "company": "Voltech HR Services Private Limited"})
+#     for att_id in att_ids:
+#         # print att_id
+#         if att_id:
+#             # datetime.strptime(add_days(datetime.strptime(add_days(today(),-1), "%Y-%m-%d").date()today(),-1), "%Y-%m-%d").date()
+#             new_leaves_allocated = 0
+#             att = frappe.get_doc("Attendance", att_id)
+#             # print att.in_time
+#             if att.in_time and att.out_time:
+#                 # print att_id
+#                 holiday_list = frappe.db.get_value(
+#                     "Employee", {'employee': att.employee}, ['holiday_list'])
+#                 holiday_date = frappe.db.get_value(
+#                     "Holiday", {'holiday_date': day, 'parent': holiday_list}, ["holiday_date"])
+#                 a_max_time = timedelta(hours=9, minutes=30)
+#                 b_max_time = timedelta(hours=5)
+                
+#                 if att and att.total_working_hour >= b_max_time:
+#                     if att.total_working_hour >= b_max_time and att.total_working_hour < a_max_time:
+#                         new_leaves_allocated = 0.5
+#                     if att.total_working_hour >= a_max_time:
+#                         new_leaves_allocated = 1
+#                     lal_ids = get_lal(att.employee, holiday_date)
+                    # print day
+                    # print att.employee
+                    # if lal_ids:
+                    #     for lal_id in lal_ids:
+                    #         lal = frappe.get_doc(
+                    #             "Leave Allocation", lal_id['name'])
+                    #         lal.new_leaves_allocated += new_leaves_allocated
+                    #         lal.total_leaves_allocated += new_leaves_allocated
+                    #         if lal.description:
+                    #             lal.description += '<br>' + \
+                    #                 'Comp-off for {0}'.format(day)
+                    #         else:
+                    #             lal.description = '<br>' + \
+                    #                 'Comp-off for {0}'.format(day)
+                    #         lal.db_update()
+                    #         frappe.db.commit
+                    # else:
+                    #     lal = frappe.new_doc("Leave Allocation")
+                    #     lal.employee = att.employee
+                    #     lal.leave_type = 'Compensatory Off'
+                    #     lal.from_date = day
+                    #     lal.to_date = to_date
+                    #     lal.new_leaves_allocated = new_leaves_allocated
+                    #     lal.description = 'Comp-off for {0}'.format(day)
+                    #     lal.save(ignore_permissions=True)
+                    #     lal.submit()
+                    #     frappe.db.commit()
 @frappe.whitelist()
-def mark_comp_off():
-    day = date.today()
+def mark_comp_off_new():
+    day = datetime.strptime(add_days(today(),-1), "%Y-%m-%d").date()
+    day = "2019-06-30"
+    
     from_date = add_days(day, -1)
-    to_date = add_months(day, 12)
-    att_ids = frappe.get_list('Attendance', {
-        "docstatus": 1, "attendance_date": day, "company": "Voltech HR Services Private Limited"})
+    to_date = add_months(day, 3)
+    valid_till = add_months(day, 3)
+    att_ids = frappe.get_list('Attendance', {"docstatus" : 2, "attendance_date": day, "company": "Voltech HR Services Private Limited"})
     for att_id in att_ids:
         if att_id:
             new_leaves_allocated = 0
             att = frappe.get_doc("Attendance", att_id)
-            holiday_list = frappe.db.get_value(
-                "Employee", {'employee': att.employee}, ['holiday_list'])
-            holiday_date = frappe.db.get_value(
-                "Holiday", {'holiday_date': day, 'parent': holiday_list}, ["holiday_date"])
-            a_max_time = timedelta(hours=9, minutes=30)
-            b_max_time = timedelta(hours=5)
-            if att.total_working_hour >= a_max_time:
-                new_leaves_allocated = 1
-            elif att.total_working_hour >= b_max_time and att.total_working_hour < a_max_time:
-                new_leaves_allocated = 0.5
-            else:
-                print hi
-            if holiday_date:
+            # print att.employee_name,att.in_time, att.out_time
+            if att.in_time and att.out_time:
+                # print att_id
+                holiday_list = frappe.db.get_value(
+                    "Employee", {'employee': att.employee}, ['holiday_list'])
+                holiday_date = frappe.db.get_value(
+                    "Holiday", {'holiday_date': day, 'parent': holiday_list}, ["holiday_date"])
+                a_max_time = timedelta(hours=9, minutes=30)
+                b_max_time = timedelta(hours=5)
+                
+                if att.total_working_hour >= b_max_time and att.total_working_hour < a_max_time:
+                    new_leaves_allocated = 0.5
+                if att.total_working_hour >= a_max_time:
+                    new_leaves_allocated = 1
+                # print att.total_working_hour, att.employee_name, new_leaves_allocated
                 lal_ids = get_lal(att.employee, holiday_date)
-                if lal_ids:
-                    for lal_id in lal_ids:
-                        lal = frappe.get_doc(
-                            "Leave Allocation", lal_id['name'])
-                        lal.new_leaves_allocated += new_leaves_allocated
-                        lal.total_leaves_allocated += new_leaves_allocated
-                        if lal.description:
-                            lal.description += '<br>' + \
-                                'Comp-off for {0}'.format(day)
-                        else:
-                            lal.description = '<br>' + \
-                                'Comp-off for {0}'.format(day)
-                        lal.db_update()
-                        frappe.db.commit
-                else:
+                # print(lal_ids)
+                # print day
+                # print att.employee
+                if frappe.db.exists("Leave Allocation",{"employee":att.employee,"leave_type":"Compensatory Off","to_date":to_date}):
+                    pass
+                
+                else: 
                     lal = frappe.new_doc("Leave Allocation")
+                    lal.description = 'Comp-off for {0}'.format(day)
+                   
                     lal.employee = att.employee
                     lal.leave_type = 'Compensatory Off'
                     lal.from_date = day
+                    lal.compensatory_off_date = day
                     lal.to_date = to_date
+                    lal.valid_till = valid_till
                     lal.new_leaves_allocated = new_leaves_allocated
-                    lal.description = 'Comp-off for {0}'.format(day)
                     lal.save(ignore_permissions=True)
+                    # print day,to_date,valid_till
                     lal.submit()
                     frappe.db.commit()
+
+def delete_comp_off():
+    # day = datetime.strptime(add_days(today(),1), "%Y-%m-%d").date()
+    lev_all = frappe.db.sql("""select name from `tabLeave Allocation` where valid_till = %s""",(day),as_dict=True)
+    print lev_all
+    for lev in lev_all:
+        comp = frappe.get_doc("Leave Allocation",lev)
+        comp.cancel()
+        frappe.db.commit()
+
+
+def get_lal(emp, day):
+    lal = frappe.db.sql("""select name from `tabLeave Allocation`
+                where employee = %s and %s between from_date and to_date and leave_type='Compensatory Off'
+         
+         
+         
+            and docstatus = 1""", (emp, day), as_dict=True)
+    return lal
+
+
+
+
 
 
 def get_lal(emp, day):

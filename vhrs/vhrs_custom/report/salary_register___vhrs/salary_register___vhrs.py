@@ -17,7 +17,10 @@ def execute(filters=None):
 
     data = []
     for ss in salary_slips:
-        row = [ss.name, ss.employee, ss.employee_name, ss.branch, ss.department, ss.designation, ss.hrsic,
+        doj = frappe.get_value("Employee", ss.employee, 'date_of_joining')
+        uan_no = frappe.get_value("Employee", ss.employee, 'uan_no')
+        aadhar_no = frappe.get_value("Employee", ss.employee, 'aadhar_no')
+        row = [ss.name, ss.employee, ss.employee_name, doj, uan_no, aadhar_no, ss.branch, ss.department, ss.designation, ss.hrsic,
                ss.company, ss.start_date, ss.end_date, ss.leave_withut_pay, ss.payment_days]
 
         if not ss.branch == None:
@@ -49,14 +52,15 @@ def get_columns(salary_slips):
     columns = [
             _("Salary Slip ID") + ":Link/Salary Slip:150",_("Employee") + ":Link/Employee:120", _("Employee Name") + "::140", _("Branch") + ":Link/Branch:120",
             _("Department") + ":Link/Department:120", _("Designation") + ":Link/Designation:120",
-            _("Company") + ":Link/Company:120", _("Start Date") + "::80", _("End Date") + "::80", _("Leave Without Pay") + ":Float:130",
+            _("Company") + ":Link/Company:120", _("Start Date") + "::80", _("End Date") + "::80",_("Leave Without Pay") + ":Float:130",
             _("Payment Days") + ":Float:120"
     ]
     """
     columns = [
         _("Salary Slip ID") + ":Link/Salary Slip:150", _("Employee") +
         ":Link/Employee:120", _("Employee Name") +
-        "::140", _("Branch") + ":Link/Branch:-1",
+        "::140", _("DoJ") + ":Date:140", _("UAN Number") +
+        "::140", _("Aadhar Number") + "::140", _("Branch") + ":Link/Branch:-1",
         _("Department") + ":Link/Department:-1", _("Designation") +
         ":Link/Designation:-1", _("BUHR") + ":Link/Business Unit:120",
         _("Company") + ":Link/Company:120", _("Start Date") +

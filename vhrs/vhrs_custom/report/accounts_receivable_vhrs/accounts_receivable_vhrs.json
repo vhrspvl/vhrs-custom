@@ -8,7 +8,7 @@
  "idx": 0, 
  "is_standard": "Yes", 
  "letter_head": "VHRS", 
- "modified": "2018-02-27 21:22:55.839887", 
+ "modified": "2019-05-06 19:06:23.697191", 
  "modified_by": "Administrator", 
  "module": "VHRS Custom", 
  "name": "Accounts Receivable VHRS", 
@@ -22,6 +22,9 @@
   }, 
   {
    "role": "Accounts User"
+  }, 
+  {
+   "role": "Unit Head"
   }
  ]
 }
