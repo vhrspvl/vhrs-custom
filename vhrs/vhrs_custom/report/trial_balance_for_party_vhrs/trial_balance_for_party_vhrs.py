@@ -298,7 +298,7 @@ def get_columns(filters, show_party_name):
         })
         columns.insert(2, {
             "fieldname": "account_type",
-            "label": "Account",
+            "label": "Account1",
             "fieldtype": "Data",
             "width": 180
         })

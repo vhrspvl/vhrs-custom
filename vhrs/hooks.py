@@ -83,9 +83,10 @@ fixtures = ["Custom Field", "Custom Script", "Property Setter"]
 
 doc_events = {
 
-    # "Project": {
-    #     "validate": "vhrs.custom.mark_territory"
-    # },
+    "Project": {
+        # "validate": "vhrs.custom.mark_territory",
+        "validate": "vhrs.custom.update_task_operation_Status"
+    },
     # "Closure": {
     #     "on_update": "vhrs.custom.so_from_import"
     # }
@@ -125,7 +126,8 @@ scheduler_events = {
         "vhrs.permission.mark_comp_off_new",
         "vhrs.custom.update_holiday_attendance",
         "vhrs.custom.update_status",
-        "vhrs.custom.update_task_status"
+        "vhrs.custom.update_last_sync"
+        # "vhrs.custom.update_task_status"
         # "vhrs.permission.update_drafts",
 
     ],
@@ -135,44 +137,44 @@ scheduler_events = {
         "vhrs.permission.mark_cl",
         # "vhrs.custom.update_pm_basic"
     ],
-    "cron": {
-        "45 07 * * *": [
-            "vhrs.permission.mark_absent_a"
-        ],
-        "00 09 * * *": [
-            "vhrs.email_alerts.send_preday_report",
-            "vhrs.permission.update_autopresent"
-        ],
-        "16 09 * * *": [
-            "vhrs.permission.mark_absent_g"
-        ],
-        "50 09 * * *": [
-            "vhrs.permission.update_att_a"
-        ],
-        "07 11 * * *": [
-            "vhrs.permission.update_att_g"
-        ],
-        "15 11 * * *": [
-            # "vhrs.custom.punch_record",
-            "vhrs.email_alerts.send_daily_report",
-            "vhrs.email_alerts.absent_list_alert"
-        ],
-        "0 11-23/1 * * *": [
-            "vhrs.permission.mark_hd"
-        ],
-        "15 0 */2 * * ": [
-            "vhrs.permission.mark_att"
-        ],
-        "50 23 * * *": [
-            "vhrs.permission.total_working_hours",
-            "vhrs.permission.half_day"
-        ],
-        "55 23 * * *": [
-            "vhrs.email_alerts.send_absent_alert",
-            "vhrs.email_alerts.send_failed_punch_alert"
-            "vhrs.permission.update_attendance"
-        ],
-    }
+    # "cron": {
+    #     "45 07 * * *": [
+    #         "vhrs.permission.mark_absent_a"
+    #     ],
+    #     "00 09 * * *": [
+    #         # "vhrs.email_alerts.send_preday_report",
+    #         # "vhrs.permission.update_autopresent"
+    #     ],
+    #     "16 09 * * *": [
+    #         # "vhrs.permission.mark_absent_g"
+    #     ],
+    #     "50 09 * * *": [
+    #         # "vhrs.permission.update_att_a"
+    #     ],
+    #     "07 11 * * *": [
+    #         # "vhrs.permission.update_att_g"
+    #     ],
+    #     "15 11 * * *": [
+    #         # "vhrs.custom.punch_record",
+    #         # "vhrs.email_alerts.send_daily_report",
+    #         # "vhrs.email_alerts.absent_list_alert"
+    #     ],
+    #     "0 11-23/1 * * *": [
+    #         "vhrs.permission.mark_hd"
+    #     ],
+    #     "15 0 */2 * * ": [
+    #         "vhrs.permission.mark_att"
+    #     ],
+    #     "50 23 * * *": [
+    #         "vhrs.permission.total_working_hours",
+    #         "vhrs.permission.half_day"
+    #     ],
+    #     "55 23 * * *": [
+    #         # "vhrs.email_alerts.send_absent_alert",
+    #         # "vhrs.email_alerts.send_failed_punch_alert"
+    #         "vhrs.permission.update_attendance"
+    #     ],
+    # }
 
 }
 

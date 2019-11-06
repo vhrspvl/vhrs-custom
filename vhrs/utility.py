@@ -251,33 +251,38 @@ def delete_applicant_bvs():
 
 @frappe.whitelist()
 def update_att():
-    from_date = '2019-08-08'
-    to_date = '2019-08-08'
+    from_date = '2019-09-30'
+    to_date = '2019-09-30'
     employee = frappe.db.sql("""select employee from `tabEmployee` where employment_type != 'Contract'""")
     # print employee
     for emp in employee:
-        att = frappe.db.sql("""select in_time, out_time, employee, attendance_date,name from `tabAttendance` where attendance_date between %s and %s and employee= %s """,(from_date,to_date,emp),as_dict=1)
+        att = frappe.db.sql("""select in_time, out_time, employee,employee_name, attendance_date,name from `tabAttendance` where attendance_date between %s and %s and employee= %s """,(from_date,to_date,emp),as_dict=1)
         for at in att:
-            if at.in_time == at.out_time:
-                # print at.in_time, at.out_time
-                pr_id = frappe.db.exists("Punch Record",{"employee":at.employee,"attendance_date":at.attendance_date})
-                times = []
-                if pr_id:
-                    pr = frappe.get_doc("Punch Record",{"employee":at.employee,"attendance_date":at.attendance_date})
-                    for t in pr.timetable:
-                        times.append(t.punch_time)
-                    in_time = min(times)
-                    out_time = max(times)
-                    if in_time == out_time:
-                        out_time = ''
-                    print in_time, out_time
-                    
-                    attendance = frappe.get_doc("Attendance",at.name)
+            print at.employee_name, at.in_time,at.out_time
+            pr_id = frappe.db.exists("Punch Record",{"employee":at.employee,"attendance_date":at.attendance_date})
+            times = []
+            if pr_id:
+                pr = frappe.get_doc("Punch Record",{"employee":at.employee,"attendance_date":at.attendance_date})
+                for t in pr.timetable:
+                    times.append(t.punch_time)
+                in_time = min(times)
+                out_time = max(times)
+                if out_time == ' ':
+                    out_time = ''
+                if in_time == out_time:
+                    out_time = ''
+                attendance = frappe.get_doc("Attendance",at.name)
+                if attendance:
                     attendance.in_time = in_time
                     attendance.out_time = out_time
                     attendance.db_update()
                     frappe.db.commit()
-
+                else:
+                    attendance = frappe.new_doc("Attendance")
+                    attendance.in_time = in_time
+                    attendance.out_time = out_time
+                    attendance.db_update()
+                    frappe.db.commit()
 # @frappe.whitelist()
 # def post_att(doc,method):
     
@@ -329,14 +334,15 @@ def bulk_update_from_csv(filename):
 
     pps = read_csv_content(filepath[1])
     for pp in pps:
-        candidate = frappe.get_all("Closure",{'passport_no':pp[0]})
-        # for c in candidate:
-        #     can = frappe.get_doc("Closure",c)
-        #     print can.passport_no,pp[0]
-        #     can.project = "OIL TECH_CORRECTION_2019"
-        #     # # can.candidate_status = "Dropped"
-        #     can.db_update()
-        #     frappe.db.commit()
+        candidate = frappe.get_all("Candidate",{'project':pp[0]})
+        for cand in candidate:
+            can = frappe.get_doc('Candidate',cand.name)
+            if can.pending_for != 'Proposed PSL':
+                print can.pending_for
+                # can.pending_for = "IDB"
+                # can.db_update()
+                # frappe.db.commit()
+            
                                 
 # def customer_gst():
 #     sales_invoice = frappe.get_all("Sales Invoice")
@@ -351,4 +357,70 @@ def bulk_update_from_csv(filename):
 #                 sis.customer_gstin = address.gstin
 #                 sis.db_update()
 #                 frappe.db.commit()
+
+def set_task_closed():
+    tasks = frappe.get_all('Task',{'status':'Closed'},['project','name'])
+    for task in tasks:
+        frappe.db.set_value("Task",task['name'],"status","Completed")
+        frappe.db.commit()
+
+def update_op_status():
+    projects = frappe.get_all('Project',filters={'operation_status':'Pending'})
+    for project in projects:
+        pro = frappe.get_doc('Project',project)
+        if pro.status in ['Completed','Cancelled']:
+            pro.operation_status = 'Completed'
+            pro.db_update()
+            frappe.db.commit()
+        if pro.status == 'Hold':
+            pro.operation_status = 'Hold'
+            pro.db_update()
+            frappe.db.commit()
+        if pro.status == 'Open':    
+            pro.operation_status = 'Sourcing'
+            pro.db_update()
+            frappe.db.commit()
+
+def update_pro_status():
+    projects = frappe.get_all('Project',fields={'name', 'status'},filters={'status':'Overdue'})
+    print len(projects)
+    comp = False
+    for project in projects:
+        tasks = frappe.db.get_all('Task',fields={'name', 'project', 'status'},filters={
+            'project': project.name})
+        # if tasks:
+        #     if all(task.status == 'Completed' or task.status == 'Cancelled' for task in tasks):
+        #         comp = True
+        # if comp == True:
+        #     pro = frappe.get_doc('Project',project.name)
+        #     print pro.operation_status
+        #     pro.status = 'Completed'
+        #     pro.db_update()
+        #     frappe.db.commit()
+
+# def block_module():
+#     user = frappe.get_all('',fields={'name', 'status'},filters={'status':'Overdue'})
+def update_pm():
+    # project = frappe.get_all("Project")
+    # for p in project:
+    #     pro = frappe.get_doc("Project",p)
+    tasks = frappe.get_all("Task",{'status':("in",['Cancelled','Completed','Hold','DnD'])},['name','project','status'])
+    for t in tasks:
+        print t.status
+        frappe.db.set_value("Task", t.name, "pending_profiles_to_send",'0')
+        # frappe.db.set_value("Project", t.project, "pps",'0')
+        # frappe.set_value("Task",t.name,"project_manager",pm)
+        # if pm:
+        #     t1 = frappe.get_doc("Task",t)
+        #     t1.project_manager = pm
+        #     t1.db_update()
+        #     frappe.db.commit()
+
+        # if not t1.project_manager:
+        #     t1.project_manager = pro.project_manager
+        #     t1.db_update()
+    
+        
+
+          
 

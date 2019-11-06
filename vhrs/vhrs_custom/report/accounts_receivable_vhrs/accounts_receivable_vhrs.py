@@ -31,7 +31,7 @@ class ReceivablePayableReport(object):
         if party_naming_by == "Naming Series":
             columns += [args.get("party_type") + " Name::110"]
 
-        columns += [_("Voucher Type") + "::110", _("Invoice Type") + "::110", _("Item Code") + "::110", _("Item Name") + "::110", _("Business Unit") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
+        columns += [_("Voucher Type") + "::110", _("Invoice Type") + "::110", _("Item Code") + "::110", _("Item Name") + "::110", _("Business Unit") + "::110",_("Division") + "::110", _("Voucher No") + ":Dynamic Link/" + _("Voucher Type") + ":120",
                     _("Due Date") + ":Date:80"]
 
         if args.get("party_type") == "Supplier":
@@ -87,7 +87,7 @@ class ReceivablePayableReport(object):
                 _("Customer Group") + ":Link/Customer Group:120"
             ]
         if args.get("party_type") == "Supplier":
-            columns += [_("Supplier Type") + ":Link/Supplier Type:80"]
+            columns += [_("Supplier Group") + ":Link/Supplier Group:80"]
 
         columns.append(_("Remarks") + "::200")
 
@@ -116,6 +116,7 @@ class ReceivablePayableReport(object):
         data = []
         invoice_type = ""
         business_unit = ""
+        division = ""
         for gle in self.get_entries_till(self.filters.report_date, args.get("party_type")):
             if self.is_receivable_or_payable(gle, dr_or_cr, future_vouchers):
                 outstanding_amount, credit_note_amount = self.get_outstanding_amount(gle,
@@ -136,22 +137,30 @@ class ReceivablePayableReport(object):
                             "Sales Invoice", gle.voucher_no, "invoice_type")
                         business_unit = frappe.db.get_value(
                             "Sales Invoice", gle.voucher_no, "business_unit")
+                        division = frappe.db.get_value(
+                            "Sales Invoice", gle.voucher_no, "division")
 
                     if gle.voucher_type == 'Purchase Invoice':
                         business_unit = frappe.db.get_value(
                             "Purchase Invoice", gle.voucher_no, "business_unit")
+                        division = frappe.db.get_value(
+                            "Purchase Invoice", gle.voucher_no, "division")
 
                     if gle.voucher_type == 'Journal Entry':
                         invoice_type = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "invoice_type")
                         business_unit = frappe.db.get_value(
                             "Journal Entry", gle.voucher_no, "business_unit")
+                        division = frappe.db.get_value(
+                            "Journal Entry", gle.voucher_no, "division")
 
                     if gle.voucher_type == 'Payment Entry':
                         invoice_type = frappe.db.get_value(
                             "Payment Entry", gle.voucher_no, "invoice_type")
                         business_unit = frappe.db.get_value(
                             "Payment Entry", gle.voucher_no, "business_unit")
+                        division = frappe.db.get_value(
+                            "Payment Entry", gle.voucher_no, "division")
 
                     item_name = []
                     item_code = []
@@ -167,10 +176,7 @@ class ReceivablePayableReport(object):
                     item_name = "/".join(item_name)
                     item_code = "/".join(item_code)
 
-                    row += [gle.voucher_type, invoice_type or '', item_code or '', item_name or '', business_unit or '',
-                            gle.voucher_no, due_date]
-
-                    # get supplier bill details
+                    row += [gle.voucher_type, invoice_type or '', item_code or '', item_name or '', business_unit or '',division or '',gle.voucher_no, due_date]
                     if args.get("party_type") == "Supplier":
                         row += [
                             voucher_details.get(

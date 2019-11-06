@@ -68,27 +68,40 @@ frappe.query_reports["General Ledger VHRS"] = {
             "label": __("Party"),
             "fieldtype": "Dynamic Link",
             "get_options": function () {
-                var party_type = frappe.query_report_filters_by_name.party_type.get_value();
-                var party = frappe.query_report_filters_by_name.party.get_value();
+                var party_type = frappe.query_report.get_filter_value("party_type");
+                var party = frappe.query_report.get_filter_value("party");
                 if (party && !party_type) {
                     frappe.throw(__("Please select Party Type first"));
                 }
                 return party_type;
-            },
-            on_change: function () {
-                var party_type = frappe.query_report_filters_by_name.party_type.get_value();
-                var party = frappe.query_report_filters_by_name.party.get_value();
-                if (!party_type || !party) {
-                    frappe.query_report_filters_by_name.party_name.set_value("");
-                    return;
-                }
-
-                var fieldname = party_type.toLowerCase() + "_name";
-                frappe.db.get_value(party_type, party, fieldname, function (value) {
-                    frappe.query_report_filters_by_name.party_name.set_value(value[fieldname]);
-                });
             }
         },
+        // {
+        //     "fieldname": "party",
+        //     "label": __("Party"),
+        //     "fieldtype": "Dynamic Link",
+        //     "get_options": function () {
+        //         var party_type = frappe.query_report_filters_by_name.party_type.get_value();
+        //         var party = frappe.query_report_filters_by_name.party.get_value();
+        //         if (party && !party_type) {
+        //             frappe.throw(__("Please select Party Type first"));
+        //         }
+        //         return party_type;
+        //     },
+        //     on_change: function () {
+        //         var party_type = frappe.query_report_filters_by_name.party_type.get_value();
+        //         var party = frappe.query_report_filters_by_name.party.get_value();
+        //         if (!party_type || !party) {
+        //             frappe.query_report_filters_by_name.party_name.set_value("");
+        //             return;
+        //         }
+
+        //         var fieldname = party_type.toLowerCase() + "_name";
+        //         frappe.db.get_value(party_type, party, fieldname, function (value) {
+        //             frappe.query_report_filters_by_name.party_name.set_value(value[fieldname]);
+        //         });
+        //     }
+        // },
         {
             "fieldname": "party_name",
             "label": __("Party Name"),

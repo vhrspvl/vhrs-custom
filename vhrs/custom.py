@@ -20,7 +20,7 @@ from frappe import throw, _, scrub
 import time
 from frappe.utils import today, flt, add_days, date_diff
 from frappe.utils.csvutils import read_csv_content
-from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
+from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee, is_holiday
 # from netifaces import netifaces
 
 # @frappe.whitelist()
@@ -35,6 +35,10 @@ from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 #                 d.show();"""
 #     frappe.publish_realtime(event='eval_js',message=quote,user= frappe.session.user)
 
+@frappe.whitelist()
+def load_candidates(task):
+    candidates = frappe.get_all("Candidate", "*", {"task": task}, order_by="given_name asc")
+    return candidates
 
 @frappe.whitelist()
 def send_drop_list():
@@ -76,8 +80,7 @@ def add_customer(doc, method):
 @frappe.whitelist()
 def bulk_mark_dnd_incharge():
     closures = frappe.db.sql("""
-    select name,project from tabClosure where dnd_incharge is Null
-    """, as_dict=1)
+    select name,project from tabClosure""", as_dict=1)
     for closure in closures:
         dnd_incharge = frappe.db.get_value(
             "Project", closure["project"], "dnd_incharge")
@@ -196,6 +199,11 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
             item.item_name = name1
             item.item_group = "Recruitment"
             item.stock_uom = "Nos"
+            item.qty = "1"
+            # item.append("item_defaults", {
+            #         "company":  frappe.defaults.get_user_default("Company"),
+            #     })
+            item.is_stock_item = "0"
             item.description = customer
             item.insert()
             item.save(ignore_permissions=True)
@@ -209,7 +217,7 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                 so.territory = territory
                 so.passport_no = passport_no
                 so.business_unit = business_unit
-                so.department = 'Sourcing'
+                so.department = 'Sourcing - VHRS'
                 # so.source_executive = source_executive
                 # so.ca_executive = ca_executive
                 so.append("items", {
@@ -218,6 +226,8 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                     "payment_type": "Candidate",
                     "description": item.description,
                     "uom": item.stock_uom,
+                    "is_stock_item" : "0",
+                    "qty":"1",
                     "rate": candidate_sc,
                     "delivery_date": today()
                 })
@@ -234,7 +244,7 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                 so.territory = territory
                 so.customer_group = cg
                 so.business_unit = business_unit
-                so.department = 'Sourcing'
+                so.department = 'Sourcing - VHRS'
                 # so.source_executive = source_executive
                 # so.ca_executive = ca_executive
                 so.append("items", {
@@ -243,6 +253,8 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                     "payment_type": "Client",
                     "description": item.description,
                     "uom": item.stock_uom,
+                    "qty":"1",
+                    "is_stock_item" :"0",
                     "rate": client_sc,
                     "delivery_date": today()
                 })
@@ -269,6 +281,8 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
             item.item_name = name1
             item.item_group = "Recruitment"
             item.stock_uom = "Nos"
+            item.qty = "1"
+            item.is_stock_item = "0"
             item.description = customer + "_Redeputed"
             item.insert()
             item.save(ignore_permissions=True)
@@ -287,6 +301,8 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
                     "payment_type": "Client",
                     "description": item.description,
                     "uom": item.stock_uom,
+                    "is_stock_item" : "0",
+                    "qty":"1",
                     "rate": redeputation_cost,
                     "delivery_date": today()
                 })
@@ -298,19 +314,46 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
 
 @frappe.whitelist()
 def update_task_status():
-    projects = frappe.get_all('Project', {'status': (
-        'in', ['Cancelled', 'Completed','DnD'])}, ['name', 'status'])
-    for project in projects:
-        # print project.name,project.status
-        tasks = frappe.get_all('Task',{
-            'project': project.name,'status': (
-        'not in', ['Closed'])},['name','status'])
-        for task in tasks:    
-            frappe.db.set_value(
-                    "Task", task.name, "status", "Closed")
+    tasks = frappe.get_all('Project',{'territory':'India'},['name'])
+    # print tasks
+    for t in tasks:
+        frappe.db.set_value(
+                    "Project", t.name, "project_type",'CVS - Shared')
+
+    # projects = frappe.get_all('Project', {'status':'Completed','operation_status':'Completed'}, ['name', 'status','operation_status'])
+    # for project in projects:
+    #     print project.name,project.status,project.operation_status
+    #     tasks = frappe.get_all('Task',{
+    #         'project': project.name,'status': (
+    #     'not in', ['Completed'])},['name','status'])
+    #     for task in tasks:    
+    #         frappe.db.set_value(
+    #                 "Task", task.name, "status", "Completed")
+
+    # projects = frappe.get_all('Project', {'status':'Cancelled','operation_status':'Completed'}, ['name', 'status','operation_status'])
+    # for project in projects:
+    #     print project.name,project.status,project.operation_status
+    #     tasks = frappe.get_all('Task',{
+    #         'project': project.name,'status': (
+    #     'not in', ['Completed'])},['name','status'])
+    #     for task in tasks:    
+    #         frappe.db.set_value(
+    #                 "Task", task.name, "status", "Completed")                
             # print task.name,task.status        
         # if tasks:
-
+@frappe.whitelist()
+def update_task_status1():
+    projects = frappe.get_all('Project', {'project_type':'External','department':'Sourcing - VHRS','operation_status':'Completed'}, ['name', 'status','operation_status','project_type','department'])
+    for p in projects:
+        # print p.name,p.project_type,p.department
+        tasks = frappe.get_all('Task',{
+            'project': p.name,'status': (
+        'not in', ['Completed'])},['name','status'])
+        for task in tasks:    
+            frappe.db.set_value(
+                    "Task", task.name, "status", "Completed")
+        frappe.db.set_value(
+                    "Project", p.name, "status", "Completed")  
 def update_status():
     # projects = frappe.get_all('Project', fields={'name', 'status'})
     # for project in projects:
@@ -396,7 +439,7 @@ def unique_shortcode(code):
 @frappe.whitelist()
 def total_vacancies(project):
     query = """select sum(r1_count) as r1_total from `tabTask` where project = '%s'""" % project
-    # frappe.errprint(query)
+    frappe.errprint(query)
     vac = frappe.db.sql(query,as_dict=1)
     # vac = frappe.get_all("Task",fields=["r1_count"],filters={"project":project})
     for v in vac:
@@ -713,43 +756,12 @@ def get_last_day(dt):
 #                 #             "status": "Half Day"
 #                 #         })
 #                 # att.db_update()
-#                 # frappe.db.commit()
-
-@frappe.whitelist()
-def load_candidates(task):
-    candidates = []
-    for candidate in get_candidates(task):
-        candidates.append(frappe._dict({
-            "passport_no": candidate.passport_no,
-            "pending_for": candidate.pending_for,
-            "given_name": candidate.given_name,
-            "india_experience": candidate.india_experience,
-            "gulf_experience": candidate.gulf_experience,
-            "current_ctc": candidate.current_ctc,
-            "currency_type": candidate.currency_type,
-            "expected_ctc": candidate.expected_ctc,
-            "currency_type1": candidate.currency_type1,
-            "expiry_date": candidate.expiry_date,
-            "ecr_status": candidate.ecr_status,
-            "current_location": candidate.current_location,
-            "mobile": candidate.mobile,
-            "landline": candidate.landline,
-            "skype_id": candidate.skype_id,
-            "associate_name": candidate.associate_name,
-            "contact_email": candidate.contact_no,
-            "email": candidate.email,
-            "candidate_id": candidate.name
-            }))
-    return candidates        
+#                 # frappe.db.commit()      
             
 
-def get_candidates(task):
-    candidates = frappe.get_all("Candidate", "*", {"task": task}, order_by="given_name asc")
-    return candidates 
 
 def update_tasks():
     tasks = frappe.get_all("Task")
-    # print len(tasks)
     for task in tasks:
         t = frappe.get_doc("Task",task)
         candidates = t.candidates
@@ -761,7 +773,7 @@ def update_tasks():
         shortlisted = frappe.db.count('Candidate', {'task':t.name,'pending_for': 'Shortlisted'})
         interviewed = frappe.db.count('Candidate', {'task':t.name,'pending_for': 'Interviewed'})
         proposed_psl = frappe.db.count('Candidate', {'task':t.name,'pending_for': 'Proposed PSL'})
-        print t.r7_count
+        # print t.r7_count
         t.r7_count = sourced
         t.r4_count = shortlisted
         t.r6_count = interviewed
@@ -917,21 +929,132 @@ def is_holiday(employee, date=None):
 
 def salesin_div():
 
-    div = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-2')""", as_dict = 1)
-    div1 = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-1','BUHR-3')""", as_dict = 1)
+    div = frappe.db.sql(""" select name from `tabSales Invoice` where business_unit in ('BUHR-2')""", as_dict = 1)
+    div1 = frappe.db.sql(""" select name from `tabSales Invoice` where business_unit in ('BUHR-1','BUHR-3')""", as_dict = 1)
+    print len(div)
+    for d in div:
+        d1 = frappe.get_doc("Sales Invoice",d)
+        print d1.name
+        d1.division = "S1"
+        d1.db_update()
+        frappe.db.commit()
+    # for s in div1:
+    #     s2 = frappe.get_doc("Sales Invoice",s)
+    #     print s2.name
+    #     s2.division = "S2"
+    #     s2.db_update()
+    #     frappe.db.commit()
+def salesorder_div():
+    
+    div = frappe.db.sql(""" select name from `tabSales Order` where business_unit in ('BUHR-2')""", as_dict = 1)
+    div1 = frappe.db.sql(""" select name from `tabSales Order` where business_unit in ('BUHR-1','BUHR-3')""", as_dict = 1)
+    print len(div)
+    for d in div:
+        d1 = frappe.get_doc("Sales Order",d)
+        print d1.name
+        d1.division = "S1"
+        d1.db_update()
+        frappe.db.commit()
+    # for s in div1:
+
+    #     s2 = frappe.get_doc("Sales Order",s)'''  '''
+    #     print s2.name
+    #     s2.division = "S2"
+    #     s2.db_update()'''  '''
+    #     frappe.db.commit()
+def purchase_in():
+    # div = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-2')""", as_dict = 1)
+    # div1 = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-1','BUHR-3') and division not in ('S2')""", as_dict = 1)
+    div2 =  frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit ="Common" and division is null  """,  as_dict = 1)
+    # print len(div)
+    # for p in div:
+    #     p1 = frappe.get_doc("Purchase Invoice",p)
+    #     print p1.division
+    #     p1.division = "S1"
+    #     p1.db_update()
+        # frappe.db.commit()
+    print len(div2)
+    for p in div2:
+        p1 = frappe.get_doc("Purchase Invoice",p)
+        print p1.division
+        p1.division = "CMN"
+        p1.db_update()
+        frappe.db.commit()
+def expense_claim():
+    div = frappe.db.sql(""" select name from `tabExpense Claim` where division is null  """,  as_dict = 1)
+    print len(div)
+    for d in div:
+        d1 = frappe.get_doc("Expense Claim",d)
+        print d1.division
+        d1.division = "CMN"
+        d1.db_update()
+        frappe.db.commit()
+    
+
+
+
+def payment_div():
+    
+    div = frappe.db.sql(""" select name from `tabPayment Entry` where business_unit in ('BUHR-2')""", as_dict = 1)
+    div1 = frappe.db.sql(""" select name from `tabPayment Entry` where business_unit in ('BUHR-1','BUHR-3')""", as_dict = 1)
     # print len(div1)
     # for d in div:
-    #     d1 = frappe.get_doc("Purchase Invoice",d)
+    #     d1 = frappe.get_doc("Payment Entry",d)
     #     print d1.name
     #     d1.division = "S1"
     #     d1.db_update()
     #     frappe.db.commit()
     for s in div1:
-        s2 = frappe.get_doc("Purchase Invoice",s)
+
+        s2 = frappe.get_doc("Payment Entry",s)
         print s2.name
         s2.division = "S2"
         s2.db_update()
         frappe.db.commit()
+def expense_div():
+    expense = frappe.get_all("Expense Claim",{'division':"S2"},['name','employee'])
+    print expense
+    # for e in expense:
+    #     pm = frappe.get_value("Employee",{'name':e.employee},['division'])
+        # print pm
+        # if pm == "CMN":
+            # print pm
+            # e1 = frappe.get_doc("Expense Claim",e)
+            # print e1
+            # e1.division = pm
+            # e1.db_update()
+            # frappe.db.commit()
+            # print e1.division
+
+
+            # t1 = frappe.get_doc("Expense Claim",e)
+        #     t1.division = pm
+    #         t1.db_update()
+    #         frappe.db.commit()
+
+    #     if not t1.project_manager:
+    #         t1.project_manager = pro.project_manager
+    #         t1.db_u
+    # div = frappe.db.sql(""" select name from `tabExpense Claim` where business_unit in ('BUHR-2')""", as_dict = 1)
+    # div1 = frappe.db.sql(""" select name from `tabExpense Claim` where business_unit in ('BUHR-1','BUHR-3')""",as_dict = 1)
+    
+
+    # print len(div)
+    # for d in div:
+    #     d1 = frappe.get_doc("Expense Claim",d)
+    #     print d1.name
+    #     d1.division = "S1"
+    #     d1.db_update()
+    #     frappe.db.commit()
+    # for s in div1:
+    
+    #     s2 = frappe.get_doc("Expense Claim",s)
+    #     print s2.name
+    #     s2.division = "S2"
+    #     s2.cancel()
+    #     frappe.db.commit()
+
+
 def bulk_update():
     # employee = frappe.get_all("Employee",fields = ['user_id'])
     # employee = frappe.db.sql(""" select name from `tabEmployee` where user_id = lead_owner""", as_dict = 1)
@@ -961,6 +1084,18 @@ def bulk_update():
     #     c1.customer_group = "Dormant"
     #     c1.db_update()
     #     frappe.db.commit()
+def task():
+    task = frappe.get_all("Task")
+    project = frappe.get_all("Project")
+    # print task
+    for p in project:
+        proj = frappe.get_doc("Project",p)
+        # print proj.project_manager
+        if proj.project_manager:
+            for t in task:
+                t1 = frappe.get_doc("Task",t)
+                if t1.project_manager == proj.project_manager:
+                    print proj.project_manager
 def created_on():
     customer = frappe.get_all("Customer")
     # print customer
@@ -976,70 +1111,126 @@ def created_on():
             print cust.name,cust.creation
             # print c1.customer_class
             cust.customer_group = "Existing Account"
-
-
+            cust.db_update()
+            frappe.db.commit()
         
 
-        
 
-    
-
-    
-# @frappe.whitelist()
-# def saturday():
-#     # day = date.today()
-#     day = '2019-08-24'
-#     total_working_hours = 0
-#     worked_hrs = 0
-#     att_ids = frappe.get_all('Attendance', filters={"attendance_date": day, "company": "Voltech HR Services Private Limited", "business_unit": ('!=', 'BUHR-4')})
-#     for att_id in att_ids:
-#         # print att_id
-#         if att_id:
-#             att = frappe.get_doc("Attendance", att_id)
-#             if att.in_time and not att.out_time:
-#                 att.update({
-#                     "total_working_hour": "",
-#                     "status": "Absent"
-#                 })
-#                 att.db_update()
-#                 frappe.db.commit()
-#             elif att.in_time and att.out_time:
-#                 in_time_f = datetime.strptime(
-#                     att.in_time, '%H:%M:%S')
-#                 out_time_f = datetime.strptime(
-#                     att.out_time, '%H:%M:%S')
-#                 worked_hrs = out_time_f - in_time_f
-#                 working_hrs = str(worked_hrs)
-#                 total_working_hour = datetime.strptime(
-#                     working_hrs, '%H:%M:%S')
-#                 total_working_hours = total_working_hour.strftime('%H:%M:%S')
-#                 # print att.employee_name, total_working_hours
-#                 # print total_working_hours
-#                 hours=timedelta(hours=total_working_hour.hour, minutes=total_working_hour.minute, seconds=total_working_hour.second)
-#                 f_max = timedelta(hours = 9.5)
-#                 h_max = timedelta(hours =5)
-#                 if att.shift == "C":
-#                     c_max = timedelta(hours = 9)
-#                     if hours >= c_max:
-#                         status = "Present"
-#                     elif hours >= h_max:
-#                         status = "Half Day"
-#                     else:
-#                         status = "Absent"
-#                     # print hours,status
-#                 elif att.status == "On Duty":
-#                     pass
-#                 # elif hours >= f_max:
-#                 #     status = "Present"
-#                 elif hours >= h_max:
-#                     status = "Present"
-#                 else:
-#                     status = "Absent"
-#                 print att.employee_name, att.in_time,att.out_time,hours,status
-#                 att.update({
-#                     "total_working_hour": total_working_hours,
-#                     "status": status
-#                 })
-#                 att.db_update()
-#                 frappe.db.commit()
+@frappe.whitelist()
+def saturday():
+    # day = date.today()
+    day = '2019-10-12'
+    att_ids = frappe.get_all('Attendance', filters={"attendance_date": day, "company": "Voltech HR Services Private Limited"})
+    for att_id in att_ids:
+        if att_id:
+            att = frappe.get_doc("Attendance", att_id)
+            if att.status == 'Half Day':
+                print att.status
+                att.update({
+                    "status": "Present"
+                })
+                att.db_update()
+                frappe.db.commit()
+           
             
+from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+def create_compact_item_print_custom_field():
+    	create_custom_field('Sales Invoice', {
+		'label': _('Vehicle No'),
+		'fieldname': 'vehicle_no',
+		'fieldtype': 'Data',
+		'print_hide': 1,
+		'insert_after': 'lr_no',
+        'translatable': 0
+	})
+
+@frappe.whitelist()
+def get_approvers(doctype, txt, searchfield, start, page_len, filters):
+	if not filters.get("employee"):
+		frappe.throw(_("Please select Employee Record first."))
+
+	approvers = []
+	department_details = {}
+	department_list = []
+	employee_department = filters.get("department") or frappe.get_value("Employee", filters.get("employee"), "department")
+	if employee_department:
+		department_details = frappe.db.get_value("Department", {"name": employee_department}, ["lft", "rgt"], as_dict=True)
+	if department_details:
+		department_list = frappe.db.sql("""select name from `tabDepartment` where lft <= %s
+			and rgt >= %s
+			and disabled=0
+			order by lft desc""", (department_details.lft, department_details.rgt), as_list = True)
+
+	if filters.get("doctype") == "On Duty Application":
+		parentfield = "leave_approvers"
+	else:
+		parentfield = "expense_approvers"
+	if department_list:
+		for d in department_list:
+			approvers += frappe.db.sql("""select user.name, user.first_name, user.last_name from
+				tabUser user, `tabDepartment Approver` approver where
+				approver.parent = %s
+				and user.name like %s
+				and approver.parentfield = %s
+				and approver.approver=user.name""",(d, "%" + txt + "%", parentfield), as_list=True)
+
+	return approvers
+
+@frappe.whitelist()
+def update_task_operation_Status(doc,method):
+    tasks = frappe.get_all('Task',{
+        'project': doc.name,'status': (
+        'not in', ['Completed'])},['name','operation_status','project_manager'])
+    for task in tasks:
+        frappe.db.set_value("Task", task.name, "operation_status",doc.operation_status)
+        frappe.db.set_value("Task", task.name, "project_manager",doc.project_manager)
+        frappe.db.set_value("Task", task.name, "territory",doc.territory)
+
+@frappe.whitelist()
+def update_last_sync():
+    shift = frappe.get_list("Shift Type")
+    for s in shift:
+        # doc = frappe.get_doc("Shift Type",s)
+        print datetime.now()
+        frappe.db.set_value("Shift Type",s, "last_sync_of_checkin",datetime.now())
+
+
+@frappe.whitelist()
+def update_candidates(candidate):
+    frappe.errprint(candidate)
+    can = json.loads(candidate)
+    for c in can:
+        cand = frappe.get_doc("Candidate",(c["candidate_id"]))
+        cand.update({
+            "pending_for": c["pending_for"],
+            "degree" : c.get("degree"),
+            "specialization" : c.get("specialization"),
+            "current_ctc" :c.get("current_ctc"),
+            "current_ctc" :c.get("current_ctc"),
+            "indian_experience" : c.get("indian_experience"),
+            "gulf_experience" : c.get("gulf_experience"),
+            "currency_type" : c.get("currency_type"),
+            "expected_ctc" : c.get("expected_ctc"),
+            "passport_no" : c.get("passport_no"),
+            "expiry_date" : c.get("expiry_date"),
+            "ecr_status" : c.get("ecr_status"),
+            "current_location" : c.get("current_location"),
+            "mobile" : c.get("mobile"),
+            "associate_name" : c.get("associate"),
+            "user" : c.get("user"),
+        })
+        cand.db_update()
+        frappe.db.commit()
+
+
+
+# @frappe.whitelist()
+# def mark_holiday_att():
+#     # day = date.today()
+#     day = '2019-10-13'
+#     employees = frappe.get_all(
+#         'Employee', filters={"status": "Active", "company":"Voltech HR Services Private Limited" })
+#     for emp in employees:
+#         if is_holiday(emp.name, day):
+#             checkins = frappe.get_list('Employee Checkin',{'employee':emp.name,''})
+#             print checkins

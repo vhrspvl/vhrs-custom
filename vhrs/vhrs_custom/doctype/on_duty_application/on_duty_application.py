@@ -118,28 +118,28 @@ class OnDutyApplication(Document):
 
 
     def validate(self):
-        self.validate_approver()
+        # self.validate_approver()
         self.validate_od_overlap()
 
-    def validate_approver(self):
-        employee = frappe.get_doc("Employee", self.employee)
-        approvers = [l.leave_approver for l in employee.get("leave_approvers")]
+    # def validate_approver(self):
+    #     employee = frappe.get_doc("Employee", self.employee)
+    #     approvers = [l.leave_approver for l in employee.get("leave_approvers")]
 
-        if len(approvers) and self.approver not in approvers:
-            frappe.throw(_("Approver must be one of {0}")
-                         .format(comma_or(approvers)), InvalidApproverError)
+    #     if len(approvers) and self.approver not in approvers:
+    #         frappe.throw(_("Approver must be one of {0}")
+    #                      .format(comma_or(approvers)), InvalidApproverError)
 
-        elif self.approver and not frappe.db.sql("""select name from `tabHas Role`
-            where parent=%s and role='Leave Approver'""", self.approver):
-            frappe.throw(_("{0} ({1}) must have role 'Approver'")
-                         .format(get_fullname(self.approver), self.approver), InvalidApproverError)
+    #     elif self.approver and not frappe.db.sql("""select name from `tabHas Role`
+    #         where parent=%s and role='Leave Approver'""", self.approver):
+    #         frappe.throw(_("{0} ({1}) must have role 'Approver'")
+    #                      .format(get_fullname(self.approver), self.approver), InvalidApproverError)
 
-        elif self.docstatus == 0 and len(approvers) and self.approver != frappe.session.user:
-            self.status = 'Open'
+    #     elif self.docstatus == 0 and len(approvers) and self.approver != frappe.session.user:
+    #         self.status = 'Open'
 
-        elif self.docstatus == 1 and len(approvers) and self.approver != frappe.session.user:
-            frappe.throw(_("Only the selected Approver can submit this Application"),
-                         LeaveApproverIdentityError)
+    #     elif self.docstatus == 1 and len(approvers) and self.approver != frappe.session.user:
+    #         frappe.throw(_("Only the selected Approver can submit this Application"),
+    #                      LeaveApproverIdentityError)
 
     def validate_od_overlap(self):
         if not self.name:
@@ -234,7 +234,6 @@ def validate_if_attendance_not_applicable(employee, attendance_date):
         frappe.msgprint(_("Attendance not submitted for {0} as {1} on leave.").format(
             attendance_date, employee), alert=1)
         return True
-
     return False
 
 

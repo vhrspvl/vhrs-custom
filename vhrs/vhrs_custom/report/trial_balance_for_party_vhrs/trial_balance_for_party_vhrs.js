@@ -55,8 +55,8 @@ frappe.query_reports["Trial Balance for Party VHRS"] = {
             "label": __("Party"),
             "fieldtype": "Dynamic Link",
             "get_options": function () {
-                var party_type = frappe.query_report_filters_by_name.party_type.get_value();
-                var party = frappe.query_report_filters_by_name.party.get_value();
+                var party_type = frappe.query_report.get_filter_value("party_type");
+                var party = frappe.query_report.get_filter_value("party");
                 if (party && !party_type) {
                     frappe.throw(__("Please select Party Type first"));
                 }
@@ -69,7 +69,7 @@ frappe.query_reports["Trial Balance for Party VHRS"] = {
             "fieldtype": "Link",
             "options": "Account",
             "get_query": function () {
-                var company = frappe.query_report_filters_by_name.company.get_value();
+                var company = frappe.query_report.get_filter_value("company");
                 return {
                     "doctype": "Account",
                     "filters": {

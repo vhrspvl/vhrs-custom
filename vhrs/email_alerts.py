@@ -701,12 +701,13 @@ def send_preday_report():
         content += pre_list + "</table>"
     frappe.sendmail(
         recipients=[
-            'dineshbabu.k@voltechgroup.com',
-            'abdulla.pi@voltechgroup.com',
-            'm.lavanya@voltechgroup.com',
-            'jobs@voltechgroup.com'
+            # 'dineshbabu.k@voltechgroup.com',
+            # 'abdulla.pi@voltechgroup.com',
+            # 'm.lavanya@voltechgroup.com',
+            # 'jobs@voltechgroup.com',
+            'subash.p@voltechgroup.com'
         ],
-        subject='Employee Daily Attendance Report - ' +
+        subject='Yesterday Attendance Report - ' +
         formatdate(add_days(today(), -1)),
         message=""" %s""" % (content))
 

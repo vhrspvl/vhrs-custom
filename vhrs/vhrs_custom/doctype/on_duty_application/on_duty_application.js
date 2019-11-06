@@ -7,17 +7,17 @@ frappe.ui.form.on('On Duty Application', {
             frm.set_value("posting_date", frappe.datetime.get_today());
         }
 
+
         frm.set_query("approver", function () {
             return {
-                query: "erpnext.hr.doctype.leave_application.leave_application.get_approvers",
+                query: "vhrs.custom.get_approvers",
                 filters: {
-                    employee: frm.doc.employee
+                    employee: frm.doc.employee,
+                    doctype: frm.doc.doctype
                 }
             };
         });
-
         frm.set_query("employee", erpnext.queries.employee);
-
     },
     half_day: function (frm) {
         if (frm.doc.half_day == 1) {
@@ -32,6 +32,7 @@ frappe.ui.form.on('On Duty Application', {
         if (frm.is_new()) {
             frm.set_value("status", "Open");
             frm.trigger("calculate_total_days");
+            frm.trigger("set_leave_approver");
         }
     },
     // half_day: function (frm) {
@@ -97,5 +98,21 @@ frappe.ui.form.on('On Duty Application', {
             });
         }
     },
+    set_leave_approver: function (frm) {
+        if (frm.doc.employee) {
+            // server call is done to include holidays in leave days calculations
+            return frappe.call({
+                method: 'erpnext.hr.doctype.leave_application.leave_application.get_leave_approver',
+                args: {
+                    "employee": frm.doc.employee,
+                },
+                callback: function (r) {
+                    if (r && r.message) {
+                        frm.set_value('approver', r.message);
+                    }
+                }
+            });
+        }
+    }
 
 });

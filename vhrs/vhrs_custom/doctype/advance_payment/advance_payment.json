@@ -1,0 +1,44 @@
+{
+ "creation": "2019-09-05 16:55:21.972690",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "advance_payment",
+  "date",
+  "proof"
+ ],
+ "fields": [
+  {
+   "fieldname": "advance_payment",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Advance Paid(Candidate)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "proof",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Proof"
+  }
+ ],
+ "istable": 1,
+ "modified": "2019-09-17 12:06:00.597918",
+ "modified_by": "Administrator",
+ "module": "VHRS Custom",
+ "name": "Advance Payment",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
