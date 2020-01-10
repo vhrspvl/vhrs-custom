@@ -21,6 +21,7 @@
   "target_value",
   "section_break_7",
   "target_distribution",
+  "calculate",
   "section_break_14",
   "column_break_16",
   "h1",
@@ -192,9 +193,14 @@
    "fieldname": "q4",
    "fieldtype": "Currency",
    "label": "Q4"
+  },
+  {
+   "fieldname": "calculate",
+   "fieldtype": "Button",
+   "label": "Calculate"
   }
  ],
- "modified": "2019-10-10 22:52:36.356940",
+ "modified": "2019-12-03 23:03:50.506481",
  "modified_by": "Administrator",
  "module": "VHRS Custom",
  "name": "Target Management",

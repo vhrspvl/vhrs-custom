@@ -18,6 +18,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
 from frappe import throw, _, scrub
 import time
+import itertools
 from frappe.utils import today, flt, add_days, date_diff
 from frappe.utils.csvutils import read_csv_content
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee, is_holiday
@@ -34,6 +35,42 @@ from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee, 
 #                 d.fields_dict.ht.$wrapper.html('<div style="width:550px;height:300px;"><iframe width="100%" height="100%" src="http://api.wpquoteoftheday.com/widget/1" frameborder="0" ></iframe></div>');
 #                 d.show();"""
 #     frappe.publish_realtime(event='eval_js',message=quote,user= frappe.session.user)
+
+@frappe.whitelist()
+def generate_qr(candidate):
+    can = frappe.get_doc("Candidate",candidate)
+    import qrcode
+    import qrcode.image.pil
+    from PIL import Image
+
+
+
+    # Create qr code instance
+    qr = qrcode.QRCode(
+        version = 1,
+        error_correction = qrcode.constants.ERROR_CORRECT_H,
+        box_size = 4,
+        border = 4,
+    )
+   
+    # The data that you want to store
+    data = """Candidate Name:%s\nPP No:%s\nCustomer:%s\nProject:%s\nTask:%s\nTCR No.:%s"""%(can.given_name,can.passport_no,can.customer,can.project,can.task,can.name)
+    # Add data
+    qr.add_data(data)
+    qr.make(fit=True)
+    # Create an image from the QR Code instance
+    img = qr.make_image()
+    path = os.path.join('/media/vhrs/ERP/','public', 'files')
+    qr_name = can.passport_no + '_qr.png'
+    # basewidth = 64
+    # wpercent = (basewidth / float(img.size[0]))
+    # hsize = int((float(img.size[1]) * float(wpercent)))
+    # img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+    img.save(path +"/%s"% qr_name)
+    frappe.errprint(img.size)
+    frappe.db.set_value("Candidate",can.name,"qr_code","/files/%s"%qr_name)
+    frappe.db.set_value("Closure",{"candidate":can.name},"qr_code","/files/%s"%qr_name)
+    return qr_name
 
 @frappe.whitelist()
 def load_candidates(task):
@@ -89,6 +126,14 @@ def bulk_mark_dnd_incharge():
             closure.dnd_incharge = dnd_incharge
             closure.db_update()
 
+@frappe.whitelist()
+def dnd_onboarding_date(date,project):
+    closures = frappe.get_list('Closure',{'project':project},['name'])
+    for closure in closures:
+        clo = frappe.get_doc('Closure',closure.name)
+        clo.dnd_onboarding_date = date
+        clo.db_update()
+    return closures
 
 @frappe.whitelist()
 def update_buhr():
@@ -179,7 +224,7 @@ def get_employees_who_are_present():
 
 
 @frappe.whitelist()
-def create_sales_order(name, customer, project, name1, passport_no, client_sc, candidate_sc, business_unit, source_executive, ca_executive, is_candidate, is_client):
+def create_sales_order(name, customer, project, name1, passport_no,designation, client_sc, candidate_sc, business_unit, source_executive, ca_executive, is_candidate, is_client):
     territory = frappe.db.get_value("Customer", customer, "territory")
     business_unit = frappe.get_value("Territory",territory,"business_unit")
     cg = frappe.db.get_value("Customer", customer, "customer_group")
@@ -227,6 +272,8 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                     "description": item.description,
                     "uom": item.stock_uom,
                     "is_stock_item" : "0",
+                    "passport_no" : passport_no,
+                    "designation" : designation,
                     "qty":"1",
                     "rate": candidate_sc,
                     "delivery_date": today()
@@ -253,6 +300,8 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
                     "payment_type": "Client",
                     "description": item.description,
                     "uom": item.stock_uom,
+                    "passport_no" : passport_no,
+                    "designation" : designation,
                     "qty":"1",
                     "is_stock_item" :"0",
                     "rate": client_sc,
@@ -267,7 +316,7 @@ def create_sales_order(name, customer, project, name1, passport_no, client_sc, c
 
 
 @frappe.whitelist()
-def recreate_sales_order(name, customer, project, name1, passport_no, redeputation_cost):
+def recreate_sales_order(name, customer, project, name1, passport_no,designation, redeputation_cost):
     territory = frappe.db.get_value("Customer", customer, "territory")
     cg = frappe.db.get_value("Customer", customer, "customer_group")
     if redeputation_cost:
@@ -302,6 +351,8 @@ def recreate_sales_order(name, customer, project, name1, passport_no, redeputati
                     "description": item.description,
                     "uom": item.stock_uom,
                     "is_stock_item" : "0",
+                    "passport_no" : passport_no,
+                    "designation" : designation,
                     "qty":"1",
                     "rate": redeputation_cost,
                     "delivery_date": today()
@@ -403,28 +454,42 @@ def send_active_report():
     # frappe.errprint(html)
 
 
+@frappe.whitelist()
+def send_whatsapp_notification(message, recipient,lat=None,lng=None,address=None,filename=None):
+    url = 'https://eu2.chat-api.com/instance86401/message?token=bfhq1v1qnuww5pla'
+    for number in recipient.split(','):
+        payload = {'phone': number, 'body': message}
+        r = requests.get(url, params=payload)  
+    if filename:
+        url = 'https://eu2.chat-api.com/instance86401/sendFile?token=bfhq1v1qnuww5pla'
+        for number in recipient.split(','):
+            payload = {'phone': number, 'body': 'http://erp.voltechgroup.com'+filename, 'filename':'erp-profile',"caption": "ERP Profile"}
+            r = requests.get(url, params=payload) 
+            frappe.errprint(payload)  
+            frappe.errprint(r.content)    
+    if lat and lng and address:
+        url = 'https://eu2.chat-api.com/instance86401/sendLocation?token=bfhq1v1qnuww5pla'
+        for number in recipient.split(','):
+            payload = {'phone': number, 'lat': lat, 'lng':lng,"address": address}
+            r = requests.get(url, params=payload) 
+            frappe.errprint(payload)  
+            frappe.errprint(r.content)  
+    return r.content
+
 # @frappe.whitelist()
 # def send_whatsapp_notification(message, recipient):
-#     url = 'https://eu24.chat-api.com/instance18904/message?token=wada8j7hy80x6lmc'
+#     url = 'https://api.wassenger.com/v1/messages'
+#     headers = {
+#     'content-type': "application/json",
+#     'token': "06554ceb00b8d784a61fd7f5939d1aba0b8ab2c4375774814e78428536a451e78974f816ce9ad8c7"
+#     }
 #     for number in recipient.split(','):
-#         payload = {'phone': number, 'body': message}
-#         r = requests.get(url, params=payload)
+
+#         payload = "{\"phone\":\"%s\",\"message\":\"%s\",\"enqueue\":\"never\"}"%(number,repr(cstr(message)))
+#         # payload = {'phone': number, 'message': message ,'enqueue':"never"}
+#         r = requests.request("POST", url, data=payload, headers=headers)
 #     return r.content
-
-@frappe.whitelist()
-def send_whatsapp_notification(message, recipient):
-    url = 'https://api.wassenger.com/v1/messages'
-    headers = {
-    'content-type': "application/json",
-    'token': "06554ceb00b8d784a61fd7f5939d1aba0b8ab2c4375774814e78428536a451e78974f816ce9ad8c7"
-    }
-    for number in recipient.split(','):
-
-        payload = "{\"phone\":\"%s\",\"message\":\"%s\",\"enqueue\":\"never\"}"%(number,repr(cstr(message)))
-        # payload = {'phone': number, 'message': message ,'enqueue':"never"}
-        r = requests.request("POST", url, data=payload, headers=headers)
-    return r.content
-    # return r.content
+#     # return r.content
 
 
 @frappe.whitelist()
@@ -631,34 +696,7 @@ def update_pm_basic():
             frappe.db.commit()
 
 
-@frappe.whitelist()
-def generate_qr(closure):
-    closure = frappe.get_doc("Closure",closure)
-    import qrcode
-    # Create qr code instance
-    qr = qrcode.QRCode(
-        version = 1,
-        error_correction = qrcode.constants.ERROR_CORRECT_H,
-        box_size = 4,
-        border = 4,
-    )
-    # The data that you want to store
-    data = """Closure ID:%s \n
-    Candidate Name:%s \n
-    PP No:%s \n    
-        """%(closure.name,closure.name1,closure.passport_no)
-    # Add data
-    qr.add_data(data)
-    qr.make(fit=True)
-    # Create an image from the QR Code instance
-    img = qr.make_image()
-    path = os.path.join('/media/vhrs/ERP/',
-                                'public', 'files')
-    print path
-    qr_name = closure.name + '_qr.png'
-    img.save(path +"/%s"% qr_name)
-    frappe.db.set_value("Closure",closure.name,"qr_code","/files/%s"%qr_name)
-    return qr_name
+
 
 
 @frappe.whitelist()
@@ -895,37 +933,6 @@ def validate_if_attendance_not_applicable(employee, attendance_date):
     return False
 
 
-def get_holiday_list_for_employee(employee, raise_exception=True):
-    if employee:
-        holiday_list, company = frappe.db.get_value(
-            "Employee", employee, ["holiday_list", "company"])
-    else:
-        holiday_list = ''
-        company = frappe.db.get_value(
-            "Global Defaults", None, "default_company")
-
-    if not holiday_list:
-        holiday_list = frappe.get_cached_value(
-            'Company',  company,  "default_holiday_list")
-
-    if not holiday_list and raise_exception:
-        frappe.throw(_('Please set a default Holiday List for Employee {0} or Company {1}').format(
-            employee, company))
-
-    return holiday_list
-
-
-def is_holiday(employee, date=None):
-    '''Returns True if given Employee has an holiday on the given date
-    :param employee: Employee `name`
-    :param date: Date to check. Will check for today if None'''
-
-    holiday_list = get_holiday_list_for_employee(employee)
-    if not date:
-        date = today()
-
-    if holiday_list:
-        return frappe.get_all('Holiday List', dict(name=holiday_list, holiday_date=date)) and True or False
 
 def salesin_div():
 
@@ -963,16 +970,16 @@ def salesorder_div():
     #     s2.db_update()'''  '''
     #     frappe.db.commit()
 def purchase_in():
-    # div = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-2')""", as_dict = 1)
-    # div1 = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-1','BUHR-3') and division not in ('S2')""", as_dict = 1)
+    div = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-2')""", as_dict = 1)
+    div1 = frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit in ('BUHR-1','BUHR-3') and division not in ('S2')""", as_dict = 1)
     div2 =  frappe.db.sql(""" select name from `tabPurchase Invoice` where business_unit ="Common" and division is null  """,  as_dict = 1)
-    # print len(div)
-    # for p in div:
-    #     p1 = frappe.get_doc("Purchase Invoice",p)
-    #     print p1.division
-    #     p1.division = "S1"
-    #     p1.db_update()
-        # frappe.db.commit()
+    print len(div)
+    for p in div:
+        p1 = frappe.get_doc("Purchase Invoice",p)
+        print p1.division
+        p1.division = "S1"
+        p1.db_update()
+        frappe.db.commit()
     print len(div2)
     for p in div2:
         p1 = frappe.get_doc("Purchase Invoice",p)
@@ -989,7 +996,16 @@ def expense_claim():
         d1.division = "CMN"
         d1.db_update()
         frappe.db.commit()
-    
+
+def supplier_group():
+    purchase_in = frappe.get_all("Purchase Invoice",['name','supplier'])
+    for p in purchase_in:
+        supplier_group = frappe.get_value('Supplier',{'name':p.supplier},['supplier_group'])
+        pi = frappe.get_doc('Purchase Invoice',p.name)
+        pi.supplier_group = supplier_group
+        pi.db_update()
+        frappe.db.commit()     
+       
 
 
 
@@ -1119,7 +1135,7 @@ def created_on():
 @frappe.whitelist()
 def saturday():
     # day = date.today()
-    day = '2019-10-12'
+    day = '2020-01-01'
     att_ids = frappe.get_all('Attendance', filters={"attendance_date": day, "company": "Voltech HR Services Private Limited"})
     for att_id in att_ids:
         if att_id:
@@ -1224,13 +1240,214 @@ def update_candidates(candidate):
 
 
 
-# @frappe.whitelist()
-# def mark_holiday_att():
-#     # day = date.today()
-#     day = '2019-10-13'
-#     employees = frappe.get_all(
-#         'Employee', filters={"status": "Active", "company":"Voltech HR Services Private Limited" })
-#     for emp in employees:
-#         if is_holiday(emp.name, day):
-#             checkins = frappe.get_list('Employee Checkin',{'employee':emp.name,''})
-#             print checkins
+# def update_pp():
+#     candidates = frappe.db.sql("""select name from `tabCandidate` where `passport_no` is null and `pending_for`='Proposed PSL' and `territory` != 'India' and date(`creation`) between '2019-04-01' and '2019-11-11' """,as_dict=1)
+#     print candidates
+#     for can in candidates:
+#         if frappe.db.exists("Closure",{'candidate':can.name}):
+#             closure = frappe.get_doc("Closure",{'candidate':can.name})
+#             if closure.passport_no:
+#                 # print closure.name, closure.passport_no, can.name
+#                 cand = frappe.get_doc("Candidate",can.name)
+#                 cand.update({
+#                     "passport_no" : closure.passport_no,
+#                 })
+#                 cand.flags.ignore_mandatory=True
+#                 cand.db_update()
+#                 frappe.db.commit()
+def update_pp():
+    candidates = frappe.db.sql("""select name from `tabCandidate` where `passport_no` is null and `pending_for`='Proposed PSL' and `territory` != 'India' and date(`creation`) between '2019-04-01' and '2019-11-11' """,as_dict=1)
+    print candidates
+    for can in candidates:
+        if frappe.db.exists("Closure",{'candidate':can.name}):
+            closure = frappe.get_doc("Closure",{'candidate':can.name})
+            if closure.passport_no:
+                # print closure.name, closure.passport_no, can.name
+                cand = frappe.get_doc("Candidate",can.name)
+                cand.update({
+                    "passport_no" : closure.passport_no,
+                })
+                cand.flags.ignore_mandatory=True
+                cand.db_update()
+                frappe.db.commit()
+
+        
+def make_idb():
+    date = add_months(today(),-3)
+    project = frappe.db.sql("""select name from `tabProject` where dnd_onboarding_date < %s """,(date),as_dict=1)
+    for pro in project:
+        candidate = frappe.get_list('Candidate',{'project':pro.name,'pending_for':'Proposed PSL'})
+        for cand in candidate:
+            can = frappe.get_doc('Candidate',cand.name)
+            can.pending_for = 'IDB'
+            can.db_update()
+        
+@frappe.whitelist()
+def send_ticket_request(name,recipient):
+    clo = frappe.get_doc("Closure",name)
+    recip=['sangeetha.s@voltechgroup.com',
+            'sethusrinivasan.s@voltechgroup.com',
+            'sahayasaji.s@voltechgroup.com',
+            'divya.s@voltechgroup.com',
+            'asha.j@voltechgroup.com',
+            'sangeetha.j@voltechgroup.com',
+            ]
+    if recipient not in recip:
+        recip.append(recipient)
+    if clo.return_needed == 1:
+        rn = "Yes"
+    else:
+        rn = "No"
+    index = 1
+    content = """<table class='table table-bordered'>
+                <tr>
+                <th>S.No</th>
+                <th>Candidate Customer Name</th>
+                <th>Given Name</th>
+                <th>Sur Name or Father Name</th>
+                <th>Date of Birth (DOB)</th>
+                <th>Passport No</th>
+                <th>Visa Type</th>
+                <th>Date of Expiry (DOE) Visa</th>
+                <th>Received Payment</th>
+                <th>Pending Payment</th>
+                <th>Date of Journey Requested</th>
+                <th>DOJ Type</th>
+                <th>Boarding Point</th>
+                <th>Destination</th>
+                <th>Return Needed</th>
+                </tr>
+                """
+    details = """
+        <tr>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        </tr>
+    """%(index,clo.customer,clo.name1,clo.father_name,formatdate(clo.dob),clo.passport_no,clo.visa_type,formatdate(clo.visa_expiry_date),clo.candidate_advance,clo.candidate_pending,formatdate(clo.date_of_journey_requested),clo.doj_type,clo.boarding_point,clo.destination,rn)
+    content += details
+    frappe.sendmail(
+        recipients= recip,
+        subject='Candidate Ticket Request-Reg.',
+        message="""
+        <h3> Candidate Ticket Request</h3>
+                <p>Dear Team,</p>
+                <p>Kindly find below candidate details to book Air Ticket</p><br>
+        %s"""%(content))
+    return True
+
+
+@frappe.whitelist()
+def bulk_ticket_request(names):
+    names = json.loads(names)
+    # recip = 'subash.p@voltechgroup.com'
+    recip=['sangeetha.s@voltechgroup.com',
+            'sethusrinivasan.s@voltechgroup.com',
+            'sahayasaji.s@voltechgroup.com',
+            'divya.s@voltechgroup.com',
+            'asha.j@voltechgroup.com',
+            'sangeetha.j@voltechgroup.com',
+            ]
+    # if recipient not in recip:
+    #     recip.append(recipient)
+    index = 0
+    content = """<table class='table table-bordered'>
+                <tr>
+                <th>S.No</th>
+                <th>Candidate Customer Name</th>
+                <th>Given Name</th>
+                <th>Sur Name or Father Name</th>
+                <th>Date of Birth (DOB)</th>
+                <th>Passport No</th>
+                <th>Visa Type</th>
+                <th>Date of Expiry (DOE) Visa</th>
+                <th>Received Payment</th>
+                <th>Pending Payment</th>
+                <th>Date of Journey Requested</th>
+                <th>DOJ Type</th>
+                <th>Boarding Point</th>
+                <th>Destination</th>
+                <th>Return Needed</th>
+                </tr>
+                """
+    details = """<tr><td></td></tr>"""
+    # status = []
+    for name in names:
+        clo = frappe.get_doc("Closure",name)
+        # status.append(clo.status)
+        index += 1
+        if clo.return_needed == 1:
+            rn = "Yes"
+        else:
+            rn = "No"
+        details += """
+            <tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+            </tr>
+        """%(index,clo.customer,clo.name1,clo.father_name,formatdate(clo.dob),clo.passport_no,clo.visa_type,formatdate(clo.visa_expiry_date),clo.candidate_advance,clo.candidate_pending,formatdate(clo.date_of_journey_requested),clo.doj_type,clo.boarding_point,clo.destination,rn)
+    content += details
+    # if status == "Ticket Details":
+    frappe.sendmail(
+        recipients= recip,
+        subject='Candidate Ticket Request-Reg.',
+        message="""
+        <h3> Candidate Ticket Request</h3>
+                <p>Dear Team,</p>
+                <p>Kindly find below candidate details to book Air Ticket</p><br>
+        %s"""%(content))
+    frappe.msgprint("Ticket Request Sent")
+    # else:
+    #     frappe.throw("")
+
+def mark_punch_time():
+    days = ['2019-12-27','2019-12-28','2019-12-30','2019-12-31']
+    for day in days:
+    # day = add_day(today(),-1)
+        query = """select employee,time,name from `tabEmployee Checkin` 
+                    where date(time) = '%s' order by employee,time,name """ % day
+        checkins = frappe.db.sql(query, as_dict=1)
+        if checkins:
+            for key, group in itertools.groupby(checkins, key=lambda x: (x['employee'])):
+                logs = list(group)
+                in_time = out_time = None
+                in_time = logs[0].time
+                employee = logs[0].employee
+                if len(logs) >= 2:
+                    out_time = logs[-1].time
+                att_id = frappe.db.get_value("Attendance", {'employee': employee,"attendance_date":day,"branch":"Head Office - Chennai"})
+                if in_time:
+                    in_time = in_time.strftime("%H:%M:%S")
+                if out_time:
+                    out_time = out_time.strftime("%H:%M:%S")
+                if att_id:
+                    att = frappe.get_doc("Attendance", att_id)
+                    att.in_time = in_time
+                    att.out_time = out_time
+                    att.db_update()
+                    frappe.db.commit

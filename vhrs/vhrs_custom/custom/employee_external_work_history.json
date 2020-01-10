@@ -1,7 +1,0 @@
-{
- "custom_fields": [], 
- "custom_perms": [], 
- "doctype": "Employee External Work History", 
- "property_setters": [], 
- "sync_on_migrate": 1
-}

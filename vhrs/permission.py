@@ -679,7 +679,7 @@ def mark_comp_off():
     # company = frappe.db.get_value("Employee", self.employee, "company")
     # days = ['2019-10-02','2019-10-06','2019-10-07','2019-10-13','2019-10-26','2019-10-27']
     # for day in days:
-    # day = '2019-10-02'
+    day = '2020-01-05'
     leave_period = get_leave_period(day, day, frappe.db.get_default("Company"))
     query = """select employee,time,name from `tabEmployee Checkin` 
                 where date(time) = '%s' and comp_off_allocated = 0 order by employee,time,name """ % day
@@ -701,7 +701,7 @@ def mark_comp_off():
                 total_hours = time_diff_in_hours(in_time, logs[-1].time)
                 if total_hours > 5:
                     new_leaves_allocated = 0.5
-                if total_hours > 9.5:
+                if total_hours >= 9.5:
                     new_leaves_allocated = 1
                 holiday_list = frappe.db.get_value(
                     "Employee", {'employee': employee}, ['holiday_list'])
@@ -713,9 +713,9 @@ def mark_comp_off():
                     lal = frappe.get_doc("Leave Allocation", lal_id)
                     lal.new_leaves_allocated += new_leaves_allocated
                     lal.total_leaves_allocated += new_leaves_allocated
-                    lal.description += '<br>' + \
-                        'Comp-off for {0} for {1} day'.format(
-                            day, new_leaves_allocated)
+                    # lal.description += '<br>' + \
+                    #     'Comp-off for {0} for {1} day'.format(
+                    #         day, new_leaves_allocated)
                     lal.db_update()
                     frappe.db.commit
                 else:
@@ -724,7 +724,7 @@ def mark_comp_off():
                     lal.leave_type = 'Compensatory Off'
                     lal.from_date = day
                     lal.to_date = leave_period[0].to_date
-                    lal.new_leaves_allocated += new_leaves_allocated
+                    lal.new_leaves_allocated = new_leaves_allocated
                     lal.description = 'Comp-off for {0} for {1} day'.format(
                         day, new_leaves_allocated)
                     lal.save(ignore_permissions=True)

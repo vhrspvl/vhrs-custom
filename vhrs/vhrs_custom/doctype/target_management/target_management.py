@@ -15,9 +15,8 @@ class TargetManagement(Document):
 @frappe.whitelist()
 def get_target(fiscal_yr, name, division, start_date, end_date, target_type):
     amount = []
-    frappe.errprint(fiscal_yr)
     year = frappe.get_doc("Fiscal Year", fiscal_yr)
-    frappe.errprint(year.year_start_date)
+    # frappe.errprint(year.year_start_date)
     if target_type == "Collection":
         collection = frappe.db.sql(
             """select sum(paid_amount) as amount,month(posting_date) from `tabPayment Entry` where `payment_type`= "Receive" and `posting_date` between %s and %s and `division` = %s group by month(posting_date) """, (year.year_start_date, year.year_end_date, division), as_dict=True)

@@ -1,0 +1,192 @@
+{
+ "autoname": "AR.####",
+ "creation": "2019-11-15 18:11:52.440439",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "name1",
+  "company",
+  "title",
+  "address",
+  "email",
+  "phone",
+  "alter_contact",
+  "alter_email",
+  "alter_phone",
+  "column_break_10",
+  "hr_name_title",
+  "hr_email_phone",
+  "company_employees",
+  "hr_dept_employee",
+  "company_industry",
+  "type_of_entity",
+  "nature_of_ownership",
+  "date_of_incorporation",
+  "award_category",
+  "organisation",
+  "excellence",
+  "best_practice",
+  "column_break_23",
+  "hr_profession",
+  "hr_professionals",
+  "hr_rising_star"
+ ],
+ "fields": [
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone #"
+  },
+  {
+   "fieldname": "alter_contact",
+   "fieldtype": "Data",
+   "label": "Alternate Contact"
+  },
+  {
+   "fieldname": "alter_email",
+   "fieldtype": "Data",
+   "label": "Alternate Email"
+  },
+  {
+   "fieldname": "alter_phone",
+   "fieldtype": "Data",
+   "label": "Alternate Phone"
+  },
+  {
+   "fieldname": "hr_name_title",
+   "fieldtype": "Data",
+   "label": "Head of HR(Name & Title)"
+  },
+  {
+   "fieldname": "hr_dept_employee",
+   "fieldtype": "Data",
+   "label": "HR Dept Employee"
+  },
+  {
+   "fieldname": "company_industry",
+   "fieldtype": "Data",
+   "label": "Company Industry"
+  },
+  {
+   "fieldname": "type_of_entity",
+   "fieldtype": "Data",
+   "label": "Type of Entity"
+  },
+  {
+   "fieldname": "hr_email_phone",
+   "fieldtype": "Data",
+   "label": "Head of HR (Email & Phone)"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "organisation",
+   "fieldtype": "Heading",
+   "label": "Organisation"
+  },
+  {
+   "fieldname": "award_category",
+   "fieldtype": "Section Break",
+   "label": "AWARD CATEGORY"
+  },
+  {
+   "default": "0",
+   "fieldname": "excellence",
+   "fieldtype": "Check",
+   "label": "Excellence in Employment Engagment Strategry"
+  },
+  {
+   "default": "0",
+   "fieldname": "best_practice",
+   "fieldtype": "Check",
+   "label": "Best Practices of workplace Safety"
+  },
+  {
+   "fieldname": "column_break_23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "hr_professionals",
+   "fieldtype": "Check",
+   "label": "HR Professionals of the Year"
+  },
+  {
+   "default": "0",
+   "fieldname": "hr_rising_star",
+   "fieldtype": "Check",
+   "label": "HR Rising Star"
+  },
+  {
+   "fieldname": "hr_profession",
+   "fieldtype": "Heading",
+   "label": "HR Professionals"
+  },
+  {
+   "fieldname": "company_employees",
+   "fieldtype": "Data",
+   "label": "Company Employees"
+  },
+  {
+   "fieldname": "nature_of_ownership",
+   "fieldtype": "Data",
+   "label": "Nature of Ownership"
+  },
+  {
+   "fieldname": "date_of_incorporation",
+   "fieldtype": "Date",
+   "label": "Date of Incorporation"
+  }
+ ],
+ "modified": "2019-11-16 13:45:48.401783",
+ "modified_by": "Administrator",
+ "module": "VHRS Custom",
+ "name": "HR Accolades Registration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

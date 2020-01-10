@@ -126,7 +126,9 @@ scheduler_events = {
         "vhrs.permission.mark_comp_off_new",
         "vhrs.custom.update_holiday_attendance",
         "vhrs.custom.update_status",
-        "vhrs.custom.update_last_sync"
+        "vhrs.custom.update_last_sync",
+        "vhrs.custom.make_ibd",
+        "vhrs.custom.mark_punch_time"
         # "vhrs.custom.update_task_status"
         # "vhrs.permission.update_drafts",
 

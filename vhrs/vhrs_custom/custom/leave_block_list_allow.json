@@ -1,7 +1,0 @@
-{
- "custom_fields": [], 
- "custom_perms": [], 
- "doctype": "Leave Block List Allow", 
- "property_setters": [], 
- "sync_on_migrate": 1
-}

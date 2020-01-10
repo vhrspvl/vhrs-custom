@@ -1,0 +1,35 @@
+{
+ "add_total_row": 0,
+ "creation": "2019-11-28 11:56:40.079885",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "VHRS",
+ "modified": "2019-12-06 15:40:34.775896",
+ "modified_by": "Administrator",
+ "module": "VHRS Custom",
+ "name": "Task Status Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "SELECT \n`tabTask`.`customer` as \"Customer:Link/Customer:300\",\n`tabProject`.`name` as \"Project:Link/Project:300\",\n`tabTask`.`subject` as \"Subject::200\",\n`tabTask`.`name` as \"ID:Link/Task:100\",\n`tabTask`.`territory` as \"Territory::80\",\n`tabTask`.`status` as \"Status::120\",\n`tabTask`.`operation_status` as \"Operation Status::120\",\nDATEDIFF( curdate(),`tabTask`.exp_start_date) as \"Age::80\",\n`tabTask`.`r1_count` as \"V#::80\",\n`tabTask`.`proposition` as \"P#::80\",\n`tabTask`.`pending_profiles_to_send` as \"PS#::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Linedup',\"Submitted\",\"shortlisted\",\"Interviewed\",\"Sourced\")\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"PR#::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Sourced')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"Sourced::80\",\n(SELECT count(*)\n FROM\n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Submitted')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"Submitted::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Shortlisted')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"Shortlisted::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Linedup')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"Linedup::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Interviewed')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"Interviewed::80\",\n(SELECT count(*)\n FROM \n `tabCandidate`\nWHERE\n`tabCandidate`.pending_for in ('Proposed PSL')\nAND\n`tabCandidate`.task = `tabTask`.name\n) AS \"CL#::80\",\n`tabTask`.`project_manager` as \"Project Manager::200\",\n`tabTask`.`_assign` as \"Assigned To::200\"\nFROM \n`tabProject`\nLeft Join `tabTask` ON `tabProject`.name =`tabTask`.project\nLeft Join `tabDirect Interview Details` ON `tabProject`.name =`tabDirect Interview Details`.parent\nWHERE\n`tabProject`.department in ('Sourcing - VHRS')\nand\n`tabTask`.`status` in ('Open','Overdue','Pending Review','working')\nORDER BY\n`tabProject`.customer,`tabProject`.name",
+ "ref_doctype": "Task",
+ "report_name": "Task Status Report",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "Projects User"
+  },
+  {
+   "role": "Projects Manager"
+  },
+  {
+   "role": "DnD Executive"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

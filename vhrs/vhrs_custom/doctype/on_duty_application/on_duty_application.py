@@ -26,6 +26,8 @@ class OverlapError(frappe.ValidationError):
 
 class OnDutyApplication(Document):
     def on_submit(self):
+        if self.approver != frappe.session.user:
+            frappe.throw(_("Only Leave Approver can submit this document"))
         if self.status == "Open":
             frappe.throw(
                 _("Only Applications with status 'Approved' and 'Rejected' can be submitted"))

@@ -237,17 +237,7 @@ def so_from_import():
                 so.submit()
                 so.save(ignore_permissions=True)
 
-@frappe.whitelist()
-def delete_applicant_bvs():
-    app_list = ["SIB-0130","SIB-0102","SIB-0116","SIB-0079","SIB-0077","SIB-0108","SIB-0107","SIB-0075","SIB-0111","SIB-0004","SIB-0126","SIB-0128","SIB-0127","SIB-0119","SIB-0125","SIB-0122","SIB-0124","SIB-0123","SIB-0121","SIB-0114","SIB-0120","SIB-0117","SIB-0115","SIB-0118","SIB-0113","SIB-0112","SIB-0109","SIB-0110","SIB-0105","SIB-0106","SIB-0103","SIB-0104","SIB-0101","SIB-0100","SIB-0099","SIB-0095","SIB-0096","SIB-0094","SIB-0093","SIB-0092","SIB-0091","SIB-0090","SIB-0088","SIB-0089","SIB-0087","SIB-0083","SIB-0084","SIB-0086","SIB-0085","SIB-0082","SIB-0081","SIB-0080","SIB-0076","SIB-0078","SIB-0073","SIB-0074","SIB-0072","SIB-0071","SIB-0070","SIB-0069","SIB-0068","SIB-0061","SIB-0067","SIB-0065","SIB-0066","SIB-0064","SIB-0063","SIB-0059","SIB-0057","SIB-0058","SIB-0055","SIB-0053","SIB-0054","SIB-0052","SIB-0050","SIB-0048","SIB-0049","SIB-0047","SIB-0023","SIB-0044","SIB-0043","SIB-0045","SIB-0046","SIB-0039","SIB-0042","SIB-0041","SIB-0040","SIB-0036","SIB-0037","SIB-0034","SIB-0038","SIB-0035","SIB-0032","SIB-0029","SIB-0033","SIB-0031","SIB-0030","SIB-0028","SIB-0027","SIB-0026","SIB-0025","SIB-0024","SIB-0022"]
-    for a in app_list:
-        # if frappe.db.exists("Verify Education Check1",{"applicant_id": a}):
-        if frappe.db.exists("Education Check1",{"applicant_id": a}):
-            # vedu1 = frappe.get_doc("Verify Education Check1",{"applicant_id": a})
-            edu1 = frappe.get_doc("Education Check1",{"applicant_id": a})
-            # frappe.delete_doc("Verify Education Check1",vedu1.name)
-            frappe.delete_doc("Education Check1",edu1.name)
-            frappe.errprint(edu1)
+
 
 @frappe.whitelist()
 def update_att():
@@ -333,15 +323,12 @@ def bulk_update_from_csv(filename):
     #CSV Content stored as pps
 
     pps = read_csv_content(filepath[1])
+    count = 0
     for pp in pps:
-        candidate = frappe.get_all("Candidate",{'project':pp[0]})
-        for cand in candidate:
-            can = frappe.get_doc('Candidate',cand.name)
-            if can.pending_for != 'Proposed PSL':
-                print can.pending_for
-                # can.pending_for = "IDB"
-                # can.db_update()
-                # frappe.db.commit()
+        cl = frappe.get_doc("Candidate",{'name':pp[0]})
+        cl.pending_for = 'IDB'
+        cl.db_update()
+        frappe.db.commit()
             
                                 
 # def customer_gst():
